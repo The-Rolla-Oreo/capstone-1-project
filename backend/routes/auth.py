@@ -1,15 +1,15 @@
 from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status, Form, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Form, Response, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from backend.models import User
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import AsyncMongoClient
 
 from backend.settings import get_settings
 
-from backend.helpers.helper_auth import get_password_hash, authenticate_user, create_access_token, get_current_user
-
+from backend.helpers.helper_auth import get_password_hash, authenticate_user, create_access_token, get_current_user, \
+    forgot_password_requested
 
 settings = get_settings()
 
@@ -22,11 +22,13 @@ ACCESS_TOKEN_EXPIRE_MINUTES = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
 MONGO_URI = settings.MONGO_URI
 DB_NAME = settings.DB_NAME
 USERS_COLLECTION = settings.USERS_COLLECTION
+PASSWORD_RESET_COLLECTION = settings.PASSWORD_RESET_COLLECTION
 
 # Initialize MongoDB client
-client = AsyncIOMotorClient(MONGO_URI)
+client = AsyncMongoClient(MONGO_URI)
 _db = client[DB_NAME]
 users_coll = _db[USERS_COLLECTION]
+password_reset_coll = _db[PASSWORD_RESET_COLLECTION]
 
 
 router = APIRouter()
@@ -124,3 +126,27 @@ async def logout(response: Response):
     """Delete the auth cookie to log out the user."""
     response.delete_cookie(key="access_token", path="/")
     return Response(status_code=204)
+
+@router.post("/forgot-password")
+async def forgot_password(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")],
+                          background_tasks: BackgroundTasks,):
+    # Have forgot password functionality run as background task
+    background_tasks.add_task(forgot_password_requested, email)
+
+    return {"msg": "Password reset link sent to your email if an account with thet email exists."}
+
+
+@router.post("/reset-password")
+async def reset_password(reset_token: str = Form(), new_password: str = Form(min_length=15)):
+    # Check if the reset token is valid
+    token_valid = await password_reset_coll.find_one({"password_reset_url": reset_token})
+    if not token_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid password reset token",
+        )
+
+    await users_coll.update_one({"email": token_valid["email"]}, # Use email from forgot password doc
+                                {"$set": {"hashed_password": get_password_hash(new_password)}})
+
+    await password_reset_coll.delete_one({"password_reset_url": reset_token})
