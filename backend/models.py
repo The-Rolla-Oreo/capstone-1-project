@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class Token(BaseModel):
@@ -11,9 +11,26 @@ class TokenData(BaseModel):
 
 
 class User(BaseModel):
+    # Expose MongoDB _id in API responses while accepting it from Mongo documents
+    id: str | None = Field(
+        default=None,
+        serialization_alias="_id",
+        validation_alias="_id",
+    )
     username: str
     email: str | None = None
     full_name: str | None = None
+
+    # Ensure Mongo's ObjectId gets serialized as a string
+    @field_validator("id", mode="before")
+    @classmethod
+    def _convert_object_id(cls, v):
+        if v is None:
+            return v
+        try:
+            return str(v)
+        except Exception:
+            return v
 
 
 class UserInDB(User):
