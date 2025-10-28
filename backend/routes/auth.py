@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Form, Response, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Form, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from backend.models import User
 from pymongo import AsyncMongoClient
