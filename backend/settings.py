@@ -14,6 +14,13 @@ class Settings(BaseSettings):
     MONGO_URI: str
     DB_NAME: str
     USERS_COLLECTION: str
+    PASSWORD_RESET_COLLECTION: str
+
+    # Email stuff
+    SMTP_HOST: str
+    SMTP_PORT: int
+    SMTP_USERNAME: str
+    SMTP_PASSWORD: str
 
     # Configure code to read from .env file in the backend dir
     model_config = SettingsConfigDict(
