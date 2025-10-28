@@ -43,6 +43,7 @@ def send_email(receiver_email: str, subject: str, body: str):
             # Send the email
             server.send_message(msg)
 
+        # TODO: Use logging instead of printing
         print(f"Email successfully sent to {RECEIVER_EMAIL}!")
     except Exception as e:
         print(f"An error occurred: {e}")
