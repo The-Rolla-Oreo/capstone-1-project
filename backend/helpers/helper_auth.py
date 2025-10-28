@@ -165,5 +165,6 @@ async def forgot_password_requested(email: str):
     await password_reset_coll.insert_one({"email": email, "password_reset_url": url_safe_string,
                                           "created_at": datetime.now(timezone.utc)})
 
+    # TODO: Mkae this look better
     send_email(receiver_email=email, subject="Password Reset Requested",
-               body=f"Please click the following link to reset your password: localhost:8000/auth/reset-password?reset_token={url_safe_string}")
+               body=f"Please click the following link to reset your password: {settings.FRONTEND_URL}/auth/reset-password?reset_token={url_safe_string}")
