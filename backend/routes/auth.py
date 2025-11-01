@@ -133,7 +133,7 @@ async def forgot_password(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%
     # Have forgot password functionality run as background task
     background_tasks.add_task(forgot_password_requested, email)
 
-    return {"msg": "Password reset link sent to your email if an account with thet email exists."}
+    return {"msg": "Password reset link sent to your email if an account with that email exists."}
 
 
 @router.post("/reset-password")
@@ -150,3 +150,5 @@ async def reset_password(reset_token: str = Form(), new_password: str = Form(min
                                 {"$set": {"hashed_password": get_password_hash(new_password)}})
 
     await password_reset_coll.delete_one({"password_reset_url": reset_token})
+
+    return {"msg": "Password successfully reset."}
