@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     DB_NAME: str
     USERS_COLLECTION: str
     PASSWORD_RESET_COLLECTION: str
+    EMAIL_VERIFICATION_COLLECTION: str
 
     # Email stuff
     SMTP_HOST: str

@@ -29,12 +29,14 @@ MONGO_URI = settings.MONGO_URI
 DB_NAME = settings.DB_NAME
 USERS_COLLECTION = settings.USERS_COLLECTION
 PASSWORD_RESET_COLLECTION = settings.PASSWORD_RESET_COLLECTION
+EMAIL_VERIFICATION_COLLECTION = settings.EMAIL_VERIFICATION_COLLECTION
 
 # Initialize MongoDB client
 client = AsyncMongoClient(MONGO_URI)
 _db = client[DB_NAME]
 users_coll = _db[USERS_COLLECTION]
 password_reset_coll = _db[PASSWORD_RESET_COLLECTION]
+email_verification_coll = _db[EMAIL_VERIFICATION_COLLECTION]
 
 
 password_hash = PasswordHash.recommended()
@@ -168,3 +170,15 @@ async def forgot_password_requested(email: str):
     # TODO: Mkae this look better
     send_email(receiver_email=email, subject="Password Reset Requested",
                body=f"Please click the following link to reset your password: {settings.FRONTEND_URL}/auth/reset-password?reset_token={url_safe_string}")
+
+
+async def verify_email_helper(email: str):
+    # Generate a random URL-safe string and store it in MongoDB
+    random_bytes = secrets.token_bytes(64)
+    url_safe_string = base64.urlsafe_b64encode(random_bytes).decode('utf-8')
+    await email_verification_coll.insert_one({"email": email, "email_verification_url": url_safe_string,
+                                          "created_at": datetime.now(timezone.utc)})
+
+    # TODO: Make this look better
+    send_email(receiver_email=email, subject="Verify Your Email Address",
+               body=f"Please click the following link to verify your email address: {settings.FRONTEND_URL}/auth/verify-email?email_verification_token={url_safe_string}")

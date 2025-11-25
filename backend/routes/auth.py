@@ -9,7 +9,7 @@ from pymongo import AsyncMongoClient
 from backend.settings import get_settings
 
 from backend.helpers.helper_auth import get_password_hash, authenticate_user, create_access_token, get_current_user, \
-    forgot_password_requested
+    forgot_password_requested, verify_email_helper
 
 settings = get_settings()
 
@@ -23,12 +23,14 @@ MONGO_URI = settings.MONGO_URI
 DB_NAME = settings.DB_NAME
 USERS_COLLECTION = settings.USERS_COLLECTION
 PASSWORD_RESET_COLLECTION = settings.PASSWORD_RESET_COLLECTION
+EMAIL_VERIFICATION_COLLECTION = settings.EMAIL_VERIFICATION_COLLECTION
 
 # Initialize MongoDB client
 client = AsyncMongoClient(MONGO_URI)
 _db = client[DB_NAME]
 users_coll = _db[USERS_COLLECTION]
 password_reset_coll = _db[PASSWORD_RESET_COLLECTION]
+email_verification_coll = _db[EMAIL_VERIFICATION_COLLECTION]
 
 
 router = APIRouter()
@@ -40,6 +42,7 @@ async def register_user(
     password: Annotated[str, Form(..., min_length=15)],
     email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")],
     full_name: Annotated[str, Form(..., min_length=5, max_length=100)],
+    background_tasks: BackgroundTasks,
 ):
     """
     - Checks that the username does not already exist.
@@ -71,12 +74,33 @@ async def register_user(
         "full_name": full_name,
         "email": email,
         "hashed_password": hashed_pwd,
+        "email_verified": False
     }
 
     # Insert into MongoDB
     await users_coll.insert_one(user_doc)
 
+    background_tasks.add_task(verify_email_helper, email)
+
     return {"msg": "User registered successfully"}
+
+
+@router.post("/verify-email")
+async def verify_email(email_verification_token: str = Form()):
+    # Check if the verification token is valid
+    token_valid = await email_verification_coll.find_one({"email_verification_url": email_verification_token})
+    if not token_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email verification token",
+        )
+
+    await users_coll.update_one({"email": token_valid["email"]},  # Use email from email verification doc
+                                {"$set": {"email_verified": True}})
+
+    await email_verification_coll.delete_one({"email_verification_url": email_verification_token})
+
+    return {"msg": "Email successfully verified."}
 
 
 @router.post("/login")
@@ -93,6 +117,9 @@ async def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    if not user.email_verified:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Please verify your email address.")
 
     access_token = create_access_token(
         data={"sub": user.username},
