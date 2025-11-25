@@ -108,7 +108,10 @@ async def invite_user(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+
     """
     Description
     -----------
-    
+    - Get id of group that current user belongs to
+    - Makes sure invitee with given email exists
+    - Makes sure current user hasn't sent an invite to this user already
+    - Run the invite user to group functionality (sends an email to invitee)
     
     Returns
     -------
@@ -148,18 +151,66 @@ async def invite_user(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+
 @router.post("/join-group")
 async def join_houshold_group(
     current_user: Annotated[User, Depends(get_current_user)],
+    invite_token: str = Form()
 ) -> None:
     """
     Description
     -----------
-
+    - Check if current user is already in a group. If yes, cannot join
+    - Checks if invite token is valid
+    - Finds group_id that invite token corresponds to
+    - Adds current user to the group doc
+    - Adds group_id to the current user's group_ids
+    - Deletes the group invite doc
     
     Returns
     -------
     None
 
     """
-    pass
+
+    # Resolve current user ObjectId and check user's existing groups
+    current_user_id = ObjectId(current_user.id)
+    user_doc = await users_coll.find_one({"_id": current_user_id})
+    existing_group_ids = user_doc.get("group_ids") if user_doc else []
+
+    # If current user is already in a group they cannot join another one.
+    if existing_group_ids and len(existing_group_ids) > 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User already belongs to a group and cannot join another one.",
+        )
+    
+    # Check if the invite token is valid
+    token_valid = await group_invites_coll.find_one(
+        {"email": user_doc.get("email"),
+         "invite_token": invite_token}
+    )
+    if not token_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid group invite token",
+        )
+
+    group_invites_doc = await group_invites_coll.find_one({"invite_token": invite_token})
+    group_id = group_invites_doc.get("group_id")
+
+    # Add the current user to the group
+    await groups_coll.update_one(
+        {"_id": group_id},
+        {"$addToSet": {"users_in_group": current_user_id}}  # Add user to group
+    )
+    
+    # Update the user's document to include the group ID
+    await users_coll.update_one(
+        {"_id": ObjectId(current_user.id)},
+        {"$addToSet": {"group_ids": group_id}}  # Add group ID to user's group_ids
+    )
+
+    # Delete the group invite doc after successful joining
+    await group_invites_coll.delete_one({"invite_token": invite_token})
+
+    return {"msg": "Successfully joined the group."}
 
 
 
@@ -205,7 +256,7 @@ async def leave_household_group(
         target_group_id = ObjectId(target_group_id)
 
     # remove the group id from the user's group_ids array
-    # use $pull to remove the specific id (safe even if it's not first)
+    # $pull to removes specific id (safe even if it's not first)
     await users_coll.update_one(
         {"_id": user_obj_id},
         {"$pull": {"group_ids": target_group_id}},
@@ -230,9 +281,11 @@ async def leave_household_group(
             if group_doc.get("group_admin_id") == user_obj_id:
                 # promote first remaining member to admin
                 new_admin = users_in_group[0]
+                new_admin_doc = await users_coll.find_one({"_id": new_admin})
+                new_admin_username = new_admin_doc.get("username")
                 await groups_coll.update_one(
                     {"_id": target_group_id},
-                    {"$set": {"group_admin_id": new_admin}}
+                    {"$set": {"group_admin_id": new_admin, "group_admin_username": new_admin_username}}
                 )
 
     return {"msg": "Left group successfully."}
