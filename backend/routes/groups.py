@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from backend.settings import get_settings
 from backend.models import User
 from backend.helpers.helper_auth import get_current_user
-from backend.helpers.helper_groups import add_groups_to_user
+from backend.helpers.helper_groups import add_groups_to_user, invite_user_to_group
 from .auth import read_users_me
 
 
@@ -24,12 +24,14 @@ DB_NAME = settings.DB_NAME
 USERS_COLLECTION = settings.USERS_COLLECTION
 GROUPS_COLLECTION = settings.GROUPS_COLLECTION
 PASSWORD_RESET_COLLECTION = settings.PASSWORD_RESET_COLLECTION
+GROUP_INVITES_COLLECTION = settings.GROUP_INVITES_COLLECTION
 
 # Initialize MongoDB client
 client = AsyncMongoClient(MONGO_URI)
 _db = client[DB_NAME]
 users_coll = _db[USERS_COLLECTION]
 groups_coll = _db[GROUPS_COLLECTION]
+group_invites_coll = _db[GROUP_INVITES_COLLECTION]
 password_reset_coll = _db[PASSWORD_RESET_COLLECTION]
 
 
@@ -61,6 +63,19 @@ async def create_houshold_group(
     group_admin_id = current_user.id
     group_admin_username = current_user.username
 
+    # Prevent creating a group if user already belongs to any group
+    admin_obj_id = ObjectId(group_admin_id)
+
+    admin_doc = await users_coll.find_one({"_id": admin_obj_id})
+    if admin_doc:
+        existing_group_ids = admin_doc.get("group_ids")
+        if existing_group_ids and len(existing_group_ids) > 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User already belongs to a group and cannot create a new one.",
+            )
+
+
     # Create a new group id
     new_group_id = ObjectId()
 
@@ -82,3 +97,145 @@ async def create_houshold_group(
 
 
     return {"msg": "Group created successfully"}    
+
+
+
+@router.post("/invite-user")
+async def invite_user(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")],
+                      current_user: Annotated[User, Depends(get_current_user)],
+                      background_tasks: BackgroundTasks,
+    ):
+    """
+    Description
+    -----------
+    
+    
+    Returns
+    -------
+    None    
+
+    """
+    
+    user_doc = await users_coll.find_one({"_id": ObjectId(current_user.id)})
+    group_id = user_doc["group_ids"][0]
+    group_doc = await groups_coll.find_one({"_id": ObjectId(group_id)})
+    group_name = group_doc["group_name"]
+
+    # Make sure the user exists
+    user_exists = await users_coll.find_one({"email": email})
+    if not user_exists:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User does not exist with that email"
+        )
+
+    # Make sure the user has not already sent an invite to this specific email
+    already_requested = await group_invites_coll.find_one({
+        "email": email,
+        "group_id": group_id
+    })
+    if already_requested:
+        return {"msg": "Invite link already sent to this email."}
+
+
+    # Have invite user functionality run as background task
+    background_tasks.add_task(invite_user_to_group, email, group_id, group_name)
+
+    return {"msg": "Invite link sent to user's email if an account with that email exists."}
+
+
+
+@router.post("/join-group")
+async def join_houshold_group(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> None:
+    """
+    Description
+    -----------
+
+    
+    Returns
+    -------
+    None
+
+    """
+    pass
+
+
+
+@router.post("/leave-group")
+async def leave_household_group(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> None:
+    """
+    Description
+    -----------
+    - Removes the current user from their first group (group_ids[0])
+    - Removes the user from the group's users_in_group array
+    - Deletes the group if it becomes empty
+    - Promotes first remaining user as admin if current user was admin
+
+    Returns
+    -------
+    None
+
+    """
+    # resolve user/object ids
+    user_obj_id = ObjectId(current_user.id)
+
+    # fetch user document and ensure they belong to a group
+    user_doc = await users_coll.find_one({"_id": user_obj_id})
+    if not user_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
+    group_ids = user_doc.get("group_ids") or []
+    if not group_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not belong to any group.",
+        )
+
+    # assume we remove the first group id (group_ids[0])
+    target_group_id = group_ids[0]
+    # ensure we have an ObjectId value
+    if not isinstance(target_group_id, ObjectId):
+        target_group_id = ObjectId(target_group_id)
+
+    # remove the group id from the user's group_ids array
+    # use $pull to remove the specific id (safe even if it's not first)
+    await users_coll.update_one(
+        {"_id": user_obj_id},
+        {"$pull": {"group_ids": target_group_id}},
+    )
+
+    # remove the user from the group's users_in_group array
+    await groups_coll.update_one(
+        {"_id": target_group_id},
+        {"$pull": {"users_in_group": user_obj_id}},
+    )
+
+    # if the group is now empty, deletes it
+    # otherwise, if current user was admin makes another user admin
+    group_doc = await groups_coll.find_one({"_id": target_group_id})
+    if group_doc:
+        users_in_group = group_doc.get("users_in_group", [])
+        if not users_in_group:
+            # delete empty group
+            await groups_coll.delete_one({"_id": target_group_id})
+        else:
+            # if the user was the admin, you may want to promote another member
+            if group_doc.get("group_admin_id") == user_obj_id:
+                # promote first remaining member to admin
+                new_admin = users_in_group[0]
+                await groups_coll.update_one(
+                    {"_id": target_group_id},
+                    {"$set": {"group_admin_id": new_admin}}
+                )
+
+    return {"msg": "Left group successfully."}
+
+    
+    

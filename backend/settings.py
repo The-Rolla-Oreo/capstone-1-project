@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     GROUPS_COLLECTION: str
     PASSWORD_RESET_COLLECTION: str
     EMAIL_VERIFICATION_COLLECTION: str
+    GROUP_INVITES_COLLECTION: str
 
     # S3 Stuff
     S3_ENDPOINT: str
