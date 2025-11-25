@@ -103,6 +103,19 @@ async def verify_email(email_verification_token: str = Form()):
     return {"msg": "Email successfully verified."}
 
 
+@router.post("/resend-verify-email")
+async def resend_verify_email(email: str = Form(), background_tasks: BackgroundTasks = BackgroundTasks()):
+    user = await users_coll.find_one({"email": email})
+
+    if user and not user["email_verified"]:
+        # Delete any existing verification tokens for this email
+        await email_verification_coll.delete_many({"email": email})
+
+        background_tasks.add_task(verify_email_helper, email)
+
+    return {"msg": "If your email is registered and unverified, a new verification link has been sent."}
+
+
 @router.post("/login")
 async def login_for_access_token(
     response: Response, # Needed to set cookie
