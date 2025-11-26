@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Form, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Form
 from pymongo import AsyncMongoClient
 
 from bson.objectid import ObjectId
@@ -10,7 +10,6 @@ from backend.settings import get_settings
 from backend.models import User
 from backend.helpers.helper_auth import get_current_user
 from backend.helpers.helper_groups import add_groups_to_user, invite_user_to_group
-from .auth import read_users_me
 
 
 
