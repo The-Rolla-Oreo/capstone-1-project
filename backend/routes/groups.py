@@ -181,18 +181,21 @@ async def join_houshold_group(
             detail="User already belongs to a group and cannot join another one.",
         )
     
-    # Check if the invite token is valid
-    token_valid = await group_invites_coll.find_one(
+    # Get the group invite doc to check if invite token is valid
+    # we search by email AND invite token to ensure current user
+    # is the correct invitee with matching email
+    group_invites_doc = await group_invites_coll.find_one(
         {"email": user_doc.get("email"),
          "invite_token": invite_token}
     )
-    if not token_valid:
+    # Check if the invite token is valid
+    if not group_invites_doc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid group invite token",
         )
 
-    group_invites_doc = await group_invites_coll.find_one({"invite_token": invite_token})
+    # Get group id from the group invite doc
     group_id = group_invites_doc.get("group_id")
 
     # Add the current user to the group
