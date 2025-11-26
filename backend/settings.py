@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     # Frontend Stuff
     FRONTEND_URL: str
 
+    # Celery Stuff
+    CELERY_BROKER_URL: str
+    CELERY_RESULT_BACKEND: str
+
     # Configure code to read from .env file in the backend dir
     model_config = SettingsConfigDict(
         env_file=str(Path(__file__).resolve().parent / ".env"),

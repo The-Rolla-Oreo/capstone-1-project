@@ -1,15 +1,15 @@
 from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Form, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Form, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from backend.models import User
 from pymongo import AsyncMongoClient
 
 from backend.settings import get_settings
 
-from backend.helpers.helper_auth import get_password_hash, authenticate_user, create_access_token, get_current_user, \
-    forgot_password_requested, verify_email_helper
+from backend.helpers.helper_auth import get_password_hash, authenticate_user, create_access_token, get_current_user
+from backend.celery_worker import forgot_password_requested_task, verify_email_helper_task
 
 settings = get_settings()
 
@@ -42,7 +42,6 @@ async def register_user(
     password: Annotated[str, Form(..., min_length=15)],
     email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")],
     full_name: Annotated[str, Form(..., min_length=5, max_length=100)],
-    background_tasks: BackgroundTasks,
 ):
     """
     - Checks that the username does not already exist.
@@ -80,7 +79,7 @@ async def register_user(
     # Insert into MongoDB
     await users_coll.insert_one(user_doc)
 
-    background_tasks.add_task(verify_email_helper, email)
+    verify_email_helper_task.delay(email)
 
     return {"msg": "User registered successfully"}
 
@@ -104,14 +103,14 @@ async def verify_email(email_verification_token: str = Form()):
 
 
 @router.post("/resend-verify-email")
-async def resend_verify_email(email: str = Form(), background_tasks: BackgroundTasks = BackgroundTasks()):
+async def resend_verify_email(email: str = Form()):
     user = await users_coll.find_one({"email": email})
 
     if user and not user["email_verified"]:
         # Delete any existing verification tokens for this email
         await email_verification_coll.delete_many({"email": email})
 
-        background_tasks.add_task(verify_email_helper, email)
+        verify_email_helper_task.delay(email)
 
     return {"msg": "If your email is registered and unverified, a new verification link has been sent."}
 
@@ -167,11 +166,10 @@ async def logout(response: Response):
     response.delete_cookie(key="access_token", path="/")
     return Response(status_code=204)
 
+
 @router.post("/forgot-password")
-async def forgot_password(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")],
-                          background_tasks: BackgroundTasks,):
-    # Have forgot password functionality run as background task
-    background_tasks.add_task(forgot_password_requested, email)
+async def forgot_password(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")],):
+    forgot_password_requested_task.delay(email)
 
     return {"msg": "Password reset link sent to your email if an account with that email exists."}
 

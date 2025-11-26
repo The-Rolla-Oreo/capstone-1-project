@@ -1,5 +1,3 @@
-import base64
-import secrets
 from datetime import timedelta, datetime, timezone
 from typing import Annotated
 
@@ -13,7 +11,6 @@ from pwdlib import PasswordHash
 from starlette import status
 from starlette.requests import Request
 
-from backend.helpers.helper_email import send_email
 from backend.models import UserInDB, TokenData
 from backend.settings import get_settings
 from pymongo import AsyncMongoClient
@@ -147,38 +144,3 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
 
     return user
 
-
-async def forgot_password_requested(email: str):
-    # Note: We don't let user know if email exists so we can prevent account enumeration attacks
-
-    # Make sure the user exists
-    user_exists = await users_coll.find_one({"email": email})
-    if not user_exists:
-        return
-
-    # Make sure the user has not already requested a password reset
-    already_requested = await password_reset_coll.find_one({"email": email})
-    if already_requested:
-        return
-
-    # Generate a random URL-safe string and store it in MongoDB
-    random_bytes = secrets.token_bytes(64)
-    url_safe_string = base64.urlsafe_b64encode(random_bytes).decode('utf-8')
-    await password_reset_coll.insert_one({"email": email, "password_reset_url": url_safe_string,
-                                          "created_at": datetime.now(timezone.utc)})
-
-    # TODO: Mkae this look better
-    send_email(receiver_email=email, subject="Password Reset Requested",
-               body=f"Please click the following link to reset your password: {settings.FRONTEND_URL}/auth/reset-password?reset_token={url_safe_string}")
-
-
-async def verify_email_helper(email: str):
-    # Generate a random URL-safe string and store it in MongoDB
-    random_bytes = secrets.token_bytes(64)
-    url_safe_string = base64.urlsafe_b64encode(random_bytes).decode('utf-8')
-    await email_verification_coll.insert_one({"email": email, "email_verification_url": url_safe_string,
-                                          "created_at": datetime.now(timezone.utc)})
-
-    # TODO: Make this look better
-    send_email(receiver_email=email, subject="Verify Your Email Address",
-               body=f"Please click the following link to verify your email address: {settings.FRONTEND_URL}/auth/verify-email?email_verification_token={url_safe_string}")
