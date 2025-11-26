@@ -20,6 +20,7 @@ class User(BaseModel):
     username: str
     email: str | None = None
     full_name: str | None = None
+    group_ids: list[str] = Field(default_factory=list)
     email_verified: bool = False
     profile_picture_url: str | None = None
 
@@ -31,6 +32,17 @@ class User(BaseModel):
             return v
         try:
             return str(v)
+        except Exception:
+            return v
+
+    @field_validator("group_ids", mode="before")
+    @classmethod
+    def _convert_group_ids(cls, v):
+        # normalize missing/None to empty list and ObjectId items to strings
+        if v is None:
+            return []
+        try:
+            return [str(item) for item in v]
         except Exception:
             return v
 
