@@ -1,15 +1,12 @@
-import base64
 import secrets
-from datetime import timedelta, datetime, timezone
+from datetime import datetime, timezone
 
-from backend.models import UserInDB, TokenData
 from backend.settings import get_settings
 from backend.helpers.helper_email import send_email
 
 from pymongo import AsyncMongoClient
 from bson.objectid import ObjectId
 
-from fastapi import HTTPException, status
 
 
 settings = get_settings()
