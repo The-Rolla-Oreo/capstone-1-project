@@ -7,6 +7,7 @@ settings = get_settings()
 celery_app = Celery(
     "tasks",
     broker=settings.CELERY_BROKER_URL,
+    # skipcq: PYL-W0069
     #backend=settings.CELERY_RESULT_BACKEND, # Don't need to keep track of results
     include=["backend.celery_worker"],
 )
