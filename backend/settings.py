@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     # Frontend Stuff
     FRONTEND_URL: str
 
+    DEV_MODE: bool
+    DEV_USER: str
+
     # Celery Stuff
     CELERY_BROKER_URL: str
     CELERY_RESULT_BACKEND: str
