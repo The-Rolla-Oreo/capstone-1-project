@@ -1,4 +1,3 @@
-import os
 from celery import Celery
 from kombu import Queue
 from .settings import get_settings
