@@ -31,7 +31,6 @@ class Settings(BaseSettings):
 
     # Celery Stuff
     CELERY_BROKER_URL: str
-    CELERY_RESULT_BACKEND: str
 
     # Configure code to read from .env file in the backend dir
     model_config = SettingsConfigDict(
