@@ -8,6 +8,7 @@
   - Make sure you create a venv first.
 - Copy the `.env.template` file to `.env` and fill in the required values
 - Run the command `fastapi dev backend/main.py` from the repo's root directory to run the dev webserver
+- Start ssh tunnel to RabbitMQ server using this command: `ssh -N -L 5672:localhost:5672 dev@ip`
 - Run the celery worker using this command: `celery -A backend.celery_app worker --loglevel=info`
 
 #### Frontend
