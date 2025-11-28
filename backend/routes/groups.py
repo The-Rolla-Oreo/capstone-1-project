@@ -117,31 +117,41 @@ async def invite_user(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+
     None    
 
     """
+   
+    # Get current users group_ids list
+    group_ids = current_user.group_ids
     
-    user_doc = await users_coll.find_one({"_id": ObjectId(current_user.id)})
-    group_id = user_doc["group_ids"][0]
-    group_doc = await groups_coll.find_one({"_id": ObjectId(group_id)})
-    group_name = group_doc["group_name"]
+    # If user doesn't belong to group, cannot invite people
+    if not group_ids:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot invite user. You are not part of a group."
+        )
+    else:
+        current_user_group_id = ObjectId(group_ids[0])
 
-    # Make sure the user exists
-    user_exists = await users_coll.find_one({"email": email})
-    if not user_exists:
+    # Make sure the invitee user exists
+    invitee_user = await users_coll.find_one({"email": email})
+    if not invitee_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User does not exist with that email"
         )
-
+    
     # Make sure the user has not already sent an invite to this specific email
     already_requested = await group_invites_coll.find_one({
         "email": email,
-        "group_id": group_id
+        "group_id": current_user_group_id
     })
     if already_requested:
         return {"msg": "Invite link already sent to this email."}
 
+    # Query for the groups doc
+    group_doc = await groups_coll.find_one({"_id": current_user_group_id})
+    group_name = group_doc["group_name"]
 
     # Have invite user functionality run as background task
-    background_tasks.add_task(invite_user_to_group, email, group_id, group_name)
+    background_tasks.add_task(invite_user_to_group, email, current_user_group_id, group_name)
 
     return {"msg": "Invite link sent to user's email if an account with that email exists."}
 
