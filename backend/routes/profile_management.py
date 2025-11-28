@@ -82,11 +82,11 @@ async def upload_pfp_bg(user: User, pfp: UploadFile):
             ContentType="image/png",
             ACL="public-read",
         )
-    except Exception as e:
+    except Exception:
         send_email(
             receiver_email=user.email,
             subject="Profile Picture Upload Failed",
-            body=f"We could not upload your new profile picture to our storage. Please try again later.",
+            body="We could not upload your new profile picture to our storage. Please try again later.",
         )
         return
 
