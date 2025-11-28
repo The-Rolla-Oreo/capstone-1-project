@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     S3_ENDPOINT: str
     S3_ACCESS_KEY: str
     S3_SECRET_KEY: str
+    S3_BUCKET_NAME: str
 
     # Email stuff
     SMTP_HOST: str
