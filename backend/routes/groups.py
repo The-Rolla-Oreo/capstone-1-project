@@ -108,8 +108,11 @@ async def invite_user(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+
     Description
     -----------
     - Get id of group that current user belongs to
+    - If current user is not in group, cannot invite
     - Makes sure invitee with given email exists
+        - if exists, do not invite if invitee is already in group
     - Makes sure current user hasn't sent an invite to this user already
+    - Query for the group doc to get group_name
     - Run the invite user to group functionality (sends an email to invitee)
     
     Returns
@@ -121,22 +124,31 @@ async def invite_user(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+
     # Get current users group_ids list
     group_ids = current_user.group_ids
     
-    # If user doesn't belong to group, cannot invite people
-    if not group_ids:
+    # If current user doesn't belong to group, cannot invite people
+    if not group_ids: # current user not in group
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot invite user. You are not part of a group."
         )
-    else:
+    else: # current user is in group
         current_user_group_id = ObjectId(group_ids[0])
 
     # Make sure the invitee user exists
     invitee_user = await users_coll.find_one({"email": email})
-    if not invitee_user:
+    if not invitee_user: # invitee does not exist
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User does not exist with that email"
         )
+    else: # invitee exists
+        invitee_group_list = invitee_user["group_ids"]
+        print(type(invitee_group_list))
+        if invitee_group_list: # invitee is already part of a group
+            # do not send an invite link
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot invite user. User is already in a group."
+            )
     
     # Make sure the user has not already sent an invite to this specific email
     already_requested = await group_invites_coll.find_one({
@@ -153,7 +165,7 @@ async def invite_user(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+
     # Have invite user functionality run as background task
     background_tasks.add_task(invite_user_to_group, email, current_user_group_id, group_name)
 
-    return {"msg": "Invite link sent to user's email if an account with that email exists."}
+    return {"msg": "Invite link sent to user's email."}
 
 
 
