@@ -142,7 +142,6 @@ async def invite_user(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+
         )
     else: # invitee exists
         invitee_group_list = invitee_user["group_ids"]
-        print(type(invitee_group_list))
         if invitee_group_list: # invitee is already part of a group
             # do not send an invite link
             raise HTTPException(
@@ -298,8 +297,11 @@ async def leave_household_group(
     if group_doc:
         users_in_group = group_doc.get("users_in_group", [])
         if not users_in_group:
+            # delete any outstanding group invites for this group
+            await group_invites_coll.delete_many({"group_id": target_group_id})
             # delete empty group
             await groups_coll.delete_one({"_id": target_group_id})
+
         else:
             # if the user was the admin, you may want to promote another member
             if group_doc.get("group_admin_id") == user_obj_id:
