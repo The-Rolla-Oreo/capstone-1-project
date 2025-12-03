@@ -161,8 +161,8 @@ async def invite_user(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+
     group_doc = await groups_coll.find_one({"_id": current_user_group_id})
     group_name = group_doc["group_name"]
 
-    # Have invite user functionality run as background task
-    background_tasks.add_task(invite_user_to_group, email, current_user_group_id, group_name)
+    # Invite user to group helper function
+    await invite_user_to_group(email, current_user_group_id, group_name)
 
     return {"msg": "Invite link sent to user's email."}
 

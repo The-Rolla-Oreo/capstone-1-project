@@ -161,3 +161,30 @@ def verify_email_helper_task(email: str):
     # TODO: Make this look better
     send_email(receiver_email=email, subject="Verify Your Email Address",
                body=f"Please click the following link to verify your email address: {settings.FRONTEND_URL}/auth/verify-email?email_verification_token={url_safe_string}")
+
+
+@celery_app.task
+def send_invite_user_email_task(email: str, group_name: str, invite_token: str) -> None:
+    """
+    Description
+    -----------
+    Celery task wrapper function for invite user 
+    to group function.
+
+    Parameters
+    ----------
+    email: str
+        Email address of invitee.
+    group_name: str
+        Name of group that invitee is invited to.
+    invite_token: str
+        Token that invitee uses to join the group.
+
+    Returns
+    -------
+    None
+    """
+    send_email(receiver_email=email, 
+               subject=f"Invite Link To Join Group [{group_name}]",
+               body=f"Please click the following link to reset your password: {settings.FRONTEND_URL}/groups/join-group?invite_token={invite_token}"
+    )    
