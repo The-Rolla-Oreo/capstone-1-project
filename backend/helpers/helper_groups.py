@@ -2,7 +2,7 @@ import secrets
 from datetime import datetime, timezone
 
 from backend.settings import get_settings
-from backend.helpers.helper_email import send_email
+from backend.celery_worker import send_invite_user_email_task
 
 from pymongo import AsyncMongoClient
 from bson.objectid import ObjectId
@@ -53,7 +53,14 @@ async def add_groups_to_user(user_id: ObjectId, group_id_list: list[ObjectId]) -
 
 
 async def invite_user_to_group(email: str, group_id: ObjectId, group_name: str):
-
+    """
+    Description
+    -----------
+    - Generated invite token
+    - Inserts group invite doc into database
+    - Calls Celery task function to send invite email
+    """
+    
     # Generate a cleaner URL-safe token
     # secrets.token_urlsafe(32) gives you a random string approx 43 chars long
     invite_token = secrets.token_urlsafe(32)    
@@ -66,6 +73,5 @@ async def invite_user_to_group(email: str, group_id: ObjectId, group_name: str):
         "created_at": datetime.now(timezone.utc)
     })
 
-    # TODO: Mkae this look better
-    send_email(receiver_email=email, subject=f"Invite Link To Join Group [{group_name}]",
-               body=f"Please click the following link to reset your password: {settings.FRONTEND_URL}/groups/join-group?invite_token={invite_token}")
+    # Celery task to send invite email
+    send_invite_user_email_task.delay(email, group_name, invite_token)
