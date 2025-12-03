@@ -102,7 +102,6 @@ async def create_houshold_group(
 @router.post("/invite-user")
 async def invite_user(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")],
                       current_user: Annotated[User, Depends(get_current_user)],
-                      background_tasks: BackgroundTasks,
     ):
     """
     Description
