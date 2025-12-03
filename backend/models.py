@@ -20,6 +20,7 @@ class User(BaseModel):
     username: str
     email: str | None = None
     full_name: str | None = None
+    email_verified: bool = False
 
     # Ensure Mongo's ObjectId gets serialized as a string
     @field_validator("id", mode="before")

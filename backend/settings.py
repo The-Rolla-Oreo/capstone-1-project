@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     DB_NAME: str
     USERS_COLLECTION: str
     PASSWORD_RESET_COLLECTION: str
+    EMAIL_VERIFICATION_COLLECTION: str
 
     # Email stuff
     SMTP_HOST: str
@@ -24,6 +25,12 @@ class Settings(BaseSettings):
 
     # Frontend Stuff
     FRONTEND_URL: str
+
+    DEV_MODE: bool
+    DEV_USER: str
+
+    # Celery Stuff
+    CELERY_BROKER_URL: str
 
     # Configure code to read from .env file in the backend dir
     model_config = SettingsConfigDict(
