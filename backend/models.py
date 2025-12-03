@@ -20,9 +20,9 @@ class User(BaseModel):
     username: str
     email: str | None = None
     full_name: str | None = None
-    group_ids: list[str] = Field(default_factory=list)
     email_verified: bool = False
     profile_picture_url: str | None = None
+    group_ids: list[str] = Field(default_factory=list)
 
     # Ensure Mongo's ObjectId gets serialized as a string
     @field_validator("id", mode="before")

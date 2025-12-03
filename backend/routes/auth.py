@@ -74,7 +74,8 @@ async def register_user(
         "full_name": full_name,
         "email": email,
         "hashed_password": hashed_pwd,
-        "email_verified": False
+        "email_verified": False,
+        "group_ids": []
     }
 
     # Insert into MongoDB
