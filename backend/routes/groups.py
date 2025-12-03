@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Form
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from pymongo import AsyncMongoClient
 
 from bson.objectid import ObjectId
