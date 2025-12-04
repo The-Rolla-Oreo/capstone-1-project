@@ -176,7 +176,7 @@ async def change_password(
 
     new_hashed_password = get_password_hash(new_password)
 
-    result = await users_coll.update_one(
+    await users_coll.update_one(
         {"username": current_user.username},
         {"$set": {"hashed_password": new_hashed_password}}
     )
