@@ -1,5 +1,3 @@
-import base64
-import secrets
 from datetime import timedelta, datetime, timezone
 from typing import Annotated
 
@@ -13,7 +11,6 @@ from pwdlib import PasswordHash
 from starlette import status
 from starlette.requests import Request
 
-from backend.helpers.helper_email import send_email
 from backend.models import UserInDB, TokenData
 from backend.settings import get_settings
 from pymongo import AsyncMongoClient
@@ -29,12 +26,14 @@ MONGO_URI = settings.MONGO_URI
 DB_NAME = settings.DB_NAME
 USERS_COLLECTION = settings.USERS_COLLECTION
 PASSWORD_RESET_COLLECTION = settings.PASSWORD_RESET_COLLECTION
+EMAIL_VERIFICATION_COLLECTION = settings.EMAIL_VERIFICATION_COLLECTION
 
 # Initialize MongoDB client
 client = AsyncMongoClient(MONGO_URI)
 _db = client[DB_NAME]
 users_coll = _db[USERS_COLLECTION]
 password_reset_coll = _db[PASSWORD_RESET_COLLECTION]
+email_verification_coll = _db[EMAIL_VERIFICATION_COLLECTION]
 
 
 password_hash = PasswordHash.recommended()
@@ -145,7 +144,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
 
     return user
 
-
+  
 async def forgot_password_requested(email: str):
     # Note: We don't let user know if email exists so we can prevent account enumeration attacks
 
