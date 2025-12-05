@@ -1,3 +1,5 @@
+import base64
+import secrets
 from datetime import timedelta, datetime, timezone
 from typing import Annotated
 
@@ -11,6 +13,7 @@ from pwdlib import PasswordHash
 from starlette import status
 from starlette.requests import Request
 
+from backend.helpers.helper_email import send_email
 from backend.models import UserInDB, TokenData
 from backend.settings import get_settings
 from pymongo import AsyncMongoClient
