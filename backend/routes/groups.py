@@ -154,7 +154,10 @@ async def invite_user(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+
         "group_id": current_user_group_id
     })
     if already_requested:
-        return {"msg": "Invite link already sent to this email."}
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Invite link already sent to this email."
+        )
 
     # Query for the groups doc
     group_doc = await groups_coll.find_one({"_id": current_user_group_id})
