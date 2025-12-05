@@ -153,7 +153,26 @@ async def reset_password(reset_token: str = Form(), new_password: str = Form(min
 
     return {"msg": "Password successfully reset."}
 
+@router.post("/change-username")
+async def change_username(
+    new_username: Annotated[str, Form(..., min_length=5, max_length=35)],
+    current_user: Annotated[User, Depends(get_current_user)]):
 
+    
+    existing_user = await users_coll.find_one({"username":new_username})
+
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already taken",
+        )
+    
+    await users_coll.update_one({"_id": current_user.username}, {"$set": {"username": new_username}})
+
+   
+    return {"msg": "Username successfully updated."}
+
+  
 @router.post("/change-password")
 async def change_password(
     old_password: Annotated[str, Form(...)],
