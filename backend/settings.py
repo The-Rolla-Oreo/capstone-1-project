@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     EMAIL_VERIFICATION_COLLECTION: str
     GROUP_INVITES_COLLECTION: str
     CHORES_COLLECTION: str
+    RECURRING_CHORES_COLLECTION: str
 
     # S3 Stuff
     S3_ENDPOINT: str
