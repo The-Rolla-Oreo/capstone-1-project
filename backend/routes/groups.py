@@ -9,8 +9,7 @@ from datetime import datetime, timezone
 from backend.settings import get_settings
 from backend.models import User
 from backend.helpers.helper_auth import get_current_user
-#from backend.helpers.helper_groups import add_groups_to_user, invite_user_to_group
-from backend.celery_worker import add_groups_to_user, invite_user_to_group 
+from backend.celery_worker import add_groups_to_user, create_group_doc, invite_user_to_group 
 
 
 settings = get_settings()
@@ -93,8 +92,12 @@ async def create_houshold_group(
     # Thus, passed in as string
     add_groups_to_user.delay(str(admin_obj_id), [str(new_group_id)]) #await add_groups_to_user(ObjectId(group_admin_id), [new_group_id])
 
-    # Insert into group doc in MongoDB
-    await groups_coll.insert_one(groups_doc)
+    # Insert into group doc in MongoDB using Celery task
+    # Convert ObjectId to string for JSON serialization
+    groups_doc["_id"] = str(groups_doc["_id"])
+    groups_doc["group_admin_id"] = str(groups_doc["group_admin_id"])
+    groups_doc["users_in_group"] = [str(uid) for uid in groups_doc["users_in_group"]]
+    create_group_doc.delay(groups_doc)
 
 
     return {"msg": "Group created successfully"}    

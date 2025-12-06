@@ -199,6 +199,23 @@ def add_groups_to_user(user_id: str, group_id_list: list[str]) -> None:
 
 
 @celery_app.task
+def create_group_doc(group_dict: dict) -> None:
+    """
+    Description
+    -----------
+    Inserts the group document after converting to ObjectId types
+    """
+
+    # Convert string IDs back to ObjectId
+    group_dict["_id"] = ObjectId(group_dict["_id"])
+    group_dict["group_admin_id"] = ObjectId(group_dict["group_admin_id"])
+    group_dict["users_in_group"] = [ObjectId(uid) for uid in group_dict["users_in_group"]]
+
+    groups_coll.insert_one(group_dict)
+
+
+
+@celery_app.task
 def invite_user_to_group(email: str, group_id: str, group_name: str):
     """
     Description
