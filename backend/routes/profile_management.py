@@ -31,6 +31,6 @@ async def set_profile_pic(
         )
 
     pfp_data = await pfp.read()
-    upload_pfp_task.delay(user_dict=current_user.model_dump(), pfp_data=pfp_data)
+    upload_pfp_task.delay(user_dict=current_user.model_dump(by_alias=True), pfp_data=pfp_data)
 
     return {"msg": "Profile picture upload in progress."}
