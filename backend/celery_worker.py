@@ -52,6 +52,7 @@ s3_client = boto3.client(
 def upload_pfp_task(user_dict: dict, pfp_data: bytes):
     # Recreate the user object
     user = User(**user_dict)
+    old_profile_picture_url = user.profile_picture_url  # Preserve the old URL
 
     # Open the image with Pillow
     try:
@@ -71,19 +72,6 @@ def upload_pfp_task(user_dict: dict, pfp_data: bytes):
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")
     buffer.seek(0)
-
-    # If user already has a pfp, delete it from S3
-    if user.profile_picture_url:
-        old_s3_object_name = user.profile_picture_url.split(f"{S3_BUCKET_NAME}/")[-1]
-        try:
-            s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=old_s3_object_name)
-        except Exception:
-            send_email(
-                receiver_email=user.email,
-                subject="Profile Picture Upload Failed",
-                body="We could not upload your new profile picture to our storage. Please try again later.",
-            )
-            return
 
     # Define the S3 object name
     s3_object_name = f"profile_pictures/{user.id}.png"
@@ -108,10 +96,33 @@ def upload_pfp_task(user_dict: dict, pfp_data: bytes):
     # Get the URL of the uploaded object
     s3_url = f"{S3_ENDPOINT}/{S3_BUCKET_NAME}/{s3_object_name}"
 
-    # Update the user's document in MongoDB with the S3 URL
-    users_coll.update_one(
-        {"username": user.username}, {"$set": {"profile_picture_url": s3_url}}
-    )
+    # Update the user's document in MongoDB with the new S3 URL
+    try:
+        users_coll.update_one(
+            {"_id": user.id}, {"$set": {"profile_picture_url": s3_url}}
+        )
+    except Exception as e:
+        # If DB update fails, send an email and attempt to delete the newly uploaded S3 object as a cleanup step
+        send_email(
+            receiver_email=user.email,
+            subject="Profile Picture Update Failed",
+            body=f"We could not update your profile with the new picture due to a database error. Please try again later. Error: {e}",
+        )
+        try:
+            s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=s3_object_name)
+        except Exception:
+            print("Failed to delete newly uploaded S3 object after DB update failed.")
+        return
+
+
+    # If user previously had a pfp, delete the old one from S3
+    if old_profile_picture_url:
+        old_s3_object_name = old_profile_picture_url.split(f"{S3_BUCKET_NAME}/")[-1]
+        try:
+            s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=old_s3_object_name)
+        except Exception:
+            # We don't want to fail the whole task if the old image deletion fails
+            print(f"Failed to delete old S3 object: {old_s3_object_name}")
 
 
 @celery_app.task
