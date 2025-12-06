@@ -197,7 +197,6 @@ async def change_username(
     new_username: Annotated[str, Form(..., min_length=5, max_length=35)],
     current_user: Annotated[User, Depends(get_current_user)]):
 
-    
     existing_user = await users_coll.find_one({"username":new_username})
 
     if existing_user:
@@ -217,6 +216,8 @@ async def change_password(
     old_password: Annotated[str, Form(...)],
     new_password: Annotated[str, Form(..., min_length=15)],
     current_user: Annotated[User, Depends(get_current_user)]):
+
+    user_in_db = await users_coll.find_one({"username": current_user.username})
 
     if not verify_password(old_password, user_in_db["hashed_password"]):
         raise HTTPException(
