@@ -9,8 +9,8 @@ from datetime import datetime, timezone
 from backend.settings import get_settings
 from backend.models import User
 from backend.helpers.helper_auth import get_current_user
-from backend.helpers.helper_groups import add_groups_to_user, invite_user_to_group
-
+#from backend.helpers.helper_groups import add_groups_to_user, invite_user_to_group
+from backend.celery_worker import add_groups_to_user, invite_user_to_group 
 
 
 settings = get_settings()
@@ -82,14 +82,16 @@ async def create_houshold_group(
     groups_doc = {
         "_id": new_group_id,
         "group_name": group_name,
-        "group_admin_id": ObjectId(group_admin_id),
+        "group_admin_id": admin_obj_id,
         "group_admin_username": group_admin_username,
-        "users_in_group": [ObjectId(group_admin_id)],
+        "users_in_group": [admin_obj_id],
         "created_at": datetime.now(timezone.utc)
     }
 
-    # Update group admin's db record
-    await add_groups_to_user(ObjectId(group_admin_id), [new_group_id])
+    # Update group admin's db record using Celery task
+    # NOTE: Celery task cannot accept json objects since they're not serializable
+    # Thus, passed in as string
+    add_groups_to_user.delay(str(admin_obj_id), [str(new_group_id)]) #await add_groups_to_user(ObjectId(group_admin_id), [new_group_id])
 
     # Insert into group doc in MongoDB
     await groups_coll.insert_one(groups_doc)
@@ -112,7 +114,7 @@ async def invite_user(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+
         - if exists, do not invite if invitee is already in group
     - Makes sure current user hasn't sent an invite to this user already
     - Query for the group doc to get group_name
-    - Run the invite user to group functionality (sends an email to invitee)
+    - Run the invite user to group functionality as Celery task
     
     Returns
     -------
@@ -163,8 +165,8 @@ async def invite_user(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+
     group_doc = await groups_coll.find_one({"_id": current_user_group_id})
     group_name = group_doc["group_name"]
 
-    # Invite user to group helper function
-    await invite_user_to_group(email, current_user_group_id, group_name)
+    # Invite user to group Celery task
+    invite_user_to_group.delay(email, str(current_user_group_id), str(group_name)) 
 
     return {"msg": "Invite link sent to user's email."}
 
