@@ -14,8 +14,10 @@ class Settings(BaseSettings):
     MONGO_URI: str
     DB_NAME: str
     USERS_COLLECTION: str
+    GROUPS_COLLECTION: str
     PASSWORD_RESET_COLLECTION: str
     EMAIL_VERIFICATION_COLLECTION: str
+    GROUP_INVITES_COLLECTION: str
 
     # S3 Stuff
     S3_ENDPOINT: str

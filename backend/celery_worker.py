@@ -13,6 +13,8 @@ from .models import User
 from .settings import get_settings
 from pymongo import MongoClient
 
+from bson.objectid import ObjectId
+
 settings = get_settings()
 
 # MongoDB config
@@ -21,6 +23,8 @@ DB_NAME = settings.DB_NAME
 USERS_COLLECTION = settings.USERS_COLLECTION
 PASSWORD_RESET_COLLECTION = settings.PASSWORD_RESET_COLLECTION
 EMAIL_VERIFICATION_COLLECTION = settings.EMAIL_VERIFICATION_COLLECTION
+GROUPS_COLLECTION = settings.GROUPS_COLLECTION
+GROUP_INVITES_COLLECTION = settings.GROUP_INVITES_COLLECTION
 
 # S3 config
 S3_ENDPOINT = settings.S3_ENDPOINT
@@ -37,6 +41,8 @@ _db = client[DB_NAME]
 users_coll = _db[USERS_COLLECTION]
 password_reset_coll = _db[PASSWORD_RESET_COLLECTION]
 email_verification_coll = _db[EMAIL_VERIFICATION_COLLECTION]
+groups_coll = _db[GROUPS_COLLECTION]
+group_invites_coll = _db[GROUP_INVITES_COLLECTION]
 
 # Initialize S3 client
 s3_client = boto3.client(
@@ -125,6 +131,7 @@ def upload_pfp_task(user_dict: dict, pfp_data: bytes):
             print(f"Failed to delete old S3 object: {old_s3_object_name}")
 
 
+
 @celery_app.task
 def forgot_password_requested_task(email: str):
     # Note: We don't let user know if email exists so we can prevent account enumeration attacks
@@ -161,3 +168,80 @@ def verify_email_helper_task(email: str):
     # TODO: Make this look better
     send_email(receiver_email=email, subject="Verify Your Email Address",
                body=f"Please click the following link to verify your email address: {settings.FRONTEND_URL}/auth/verify-email?email_verification_token={url_safe_string}")
+
+
+@celery_app.task
+def add_groups_to_user(user_id: str, group_id_list: list[str]) -> None:
+    """
+    Description
+    -----------
+    Adds group ids to a user's DB record
+
+    Precondition
+    ------------
+    User must exist
+
+    Returns
+    -------
+    None
+    """
+
+    # Convert to BSON object ids
+    user_bson_id = ObjectId(user_id)
+    group_bson_id_list = [ObjectId(group_id_str) for group_id_str in group_id_list]
+
+    # NOTE: `$addToSet` adds the value only if it does not already exist in the array
+    users_coll.update_one(
+        {"_id": user_bson_id}, 
+        {"$addToSet": {"group_ids": {"$each": group_bson_id_list}}}
+    )
+
+
+
+@celery_app.task
+def create_group_doc(group_dict: dict) -> None:
+    """
+    Description
+    -----------
+    Inserts the group document after converting to ObjectId types
+    """
+
+    # Convert string IDs back to ObjectId
+    group_dict["_id"] = ObjectId(group_dict["_id"])
+    group_dict["group_admin_id"] = ObjectId(group_dict["group_admin_id"])
+    group_dict["users_in_group"] = [ObjectId(uid) for uid in group_dict["users_in_group"]]
+
+    groups_coll.insert_one(group_dict)
+
+
+
+@celery_app.task
+def invite_user_to_group(email: str, group_id: str, group_name: str):
+    """
+    Description
+    -----------
+    - Generated invite token
+    - Inserts group invite doc into database
+    - Calls Celery task function to send invite email
+    """
+    
+    # Generate a cleaner URL-safe token
+    # secrets.token_urlsafe(32) gives you a random string approx 43 chars long
+    invite_token = secrets.token_urlsafe(32)   
+
+    group_bson_id = ObjectId(group_id) 
+
+    group_invites_coll.insert_one({
+        "email": email, 
+        "group_id": group_bson_id,
+        "group_name": group_name,
+        "invite_token": invite_token,
+        "created_at": datetime.now(timezone.utc)
+    })
+
+    send_email(receiver_email=email, 
+               subject=f"Invite Link To Join Group [{group_name}]",
+               body=f"Please click the following link to reset your password: {settings.FRONTEND_URL}/groups/join-group?invite_token={invite_token}"
+    ) 
+
+
