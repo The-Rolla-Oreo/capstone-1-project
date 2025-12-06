@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     PASSWORD_RESET_COLLECTION: str
     EMAIL_VERIFICATION_COLLECTION: str
 
+    # S3 Stuff
+    S3_ENDPOINT: str
+    S3_ACCESS_KEY: str
+    S3_SECRET_KEY: str
+    S3_BUCKET_NAME: str
+
     # Email stuff
     SMTP_HOST: str
     SMTP_PORT: int

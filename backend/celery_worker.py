@@ -1,9 +1,15 @@
 import base64
+import io
 import secrets
 from datetime import datetime, timezone
 
+import boto3
+from PIL import Image
+from botocore.client import Config
+
 from .celery_app import celery_app
 from .helpers.helper_email import send_email
+from .models import User
 from .settings import get_settings
 from pymongo import MongoClient
 
@@ -16,6 +22,14 @@ USERS_COLLECTION = settings.USERS_COLLECTION
 PASSWORD_RESET_COLLECTION = settings.PASSWORD_RESET_COLLECTION
 EMAIL_VERIFICATION_COLLECTION = settings.EMAIL_VERIFICATION_COLLECTION
 
+# S3 config
+S3_ENDPOINT = settings.S3_ENDPOINT
+S3_ACCESS_KEY = settings.S3_ACCESS_KEY
+S3_SECRET_KEY = settings.S3_SECRET_KEY
+S3_BUCKET_NAME = settings.S3_BUCKET_NAME
+PFP_SIZE = (256, 256)
+
+
 # Initialize MongoDB client
 # Note: Celery workers should use a synchronous MongoDB client
 client = MongoClient(MONGO_URI)
@@ -23,6 +37,92 @@ _db = client[DB_NAME]
 users_coll = _db[USERS_COLLECTION]
 password_reset_coll = _db[PASSWORD_RESET_COLLECTION]
 email_verification_coll = _db[EMAIL_VERIFICATION_COLLECTION]
+
+# Initialize S3 client
+s3_client = boto3.client(
+    "s3",
+    endpoint_url=S3_ENDPOINT,
+    aws_access_key_id=S3_ACCESS_KEY,
+    aws_secret_access_key=S3_SECRET_KEY,
+    config=Config(s3={"addressing_style": "path"}),
+)
+
+
+@celery_app.task
+def upload_pfp_task(user_dict: dict, pfp_data: bytes):
+    # Recreate the user object
+    user = User(**user_dict)
+    old_profile_picture_url = user.profile_picture_url  # Preserve the old URL
+
+    # Open the image with Pillow
+    try:
+        image = Image.open(io.BytesIO(pfp_data))
+    except Exception:
+        send_email(
+            receiver_email=user.email,
+            subject="Profile Picture Upload Failed",
+            body="We could not read the uploaded image file. Please try again with a different file.",
+        )
+        return
+
+    # Resize the image
+    image.thumbnail(PFP_SIZE)
+
+    # Save the resized image to an in-memory buffer
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    # Define the S3 object name
+    s3_object_name = f"profile_pictures/{user.id}.png"
+
+    # Upload the image to S3
+    try:
+        s3_client.put_object(
+            Bucket=S3_BUCKET_NAME,
+            Key=s3_object_name,
+            Body=buffer,
+            ContentType="image/png",
+            ACL="public-read",
+        )
+    except Exception:
+        send_email(
+            receiver_email=user.email,
+            subject="Profile Picture Upload Failed",
+            body="We could not upload your new profile picture to our storage. Please try again later.",
+        )
+        return
+
+    # Get the URL of the uploaded object
+    s3_url = f"{S3_ENDPOINT}/{S3_BUCKET_NAME}/{s3_object_name}"
+
+    # Update the user's document in MongoDB with the new S3 URL
+    try:
+        users_coll.update_one(
+            {"_id": user.id}, {"$set": {"profile_picture_url": s3_url}}
+        )
+    except Exception as e:
+        # If DB update fails, send an email and attempt to delete the newly uploaded S3 object as a cleanup step
+        send_email(
+            receiver_email=user.email,
+            subject="Profile Picture Update Failed",
+            body=f"We could not update your profile with the new picture due to a database error. Please try again later. Error: {e}",
+        )
+        try:
+            s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=s3_object_name)
+        except Exception:
+            print("Failed to delete newly uploaded S3 object after DB update failed.")
+        return
+
+
+    # If user previously had a pfp, delete the old one from S3
+    if old_profile_picture_url:
+        old_s3_object_name = old_profile_picture_url.split(f"{S3_BUCKET_NAME}/")[-1]
+        try:
+            s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=old_s3_object_name)
+        except Exception:
+            # We don't want to fail the whole task if the old image deletion fails
+            print(f"Failed to delete old S3 object: {old_s3_object_name}")
 
 
 @celery_app.task

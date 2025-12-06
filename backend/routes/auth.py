@@ -8,8 +8,9 @@ from pymongo import AsyncMongoClient
 
 from backend.settings import get_settings
 
-from backend.helpers.helper_auth import get_password_hash, authenticate_user, create_access_token, get_current_user
+from backend.helpers.helper_auth import get_password_hash, verify_password, authenticate_user, create_access_token, get_current_user
 from backend.celery_worker import forgot_password_requested_task, verify_email_helper_task
+
 
 settings = get_settings()
 
@@ -190,3 +191,45 @@ async def reset_password(reset_token: str = Form(), new_password: str = Form(min
     await password_reset_coll.delete_one({"password_reset_url": reset_token})
 
     return {"msg": "Password successfully reset."}
+
+@router.post("/change-username")
+async def change_username(
+    new_username: Annotated[str, Form(..., min_length=5, max_length=35)],
+    current_user: Annotated[User, Depends(get_current_user)]):
+
+    existing_user = await users_coll.find_one({"username":new_username})
+
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already taken",
+        )
+    
+    await users_coll.update_one({"username": current_user.username}, {"$set": {"username": new_username}})
+
+   
+    return {"msg": "Username successfully updated."}
+
+  
+@router.post("/change-password")
+async def change_password(
+    old_password: Annotated[str, Form(...)],
+    new_password: Annotated[str, Form(..., min_length=15)],
+    current_user: Annotated[User, Depends(get_current_user)]):
+
+    user_in_db = await users_coll.find_one({"username": current_user.username})
+
+    if not verify_password(old_password, user_in_db["hashed_password"]):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Old password is incorrect"
+        )
+
+    new_hashed_password = get_password_hash(new_password)
+
+    await users_coll.update_one(
+        {"username": current_user.username},
+        {"$set": {"hashed_password": new_hashed_password}}
+    )
+
+    return {"msg": "Password successfully changed."}
