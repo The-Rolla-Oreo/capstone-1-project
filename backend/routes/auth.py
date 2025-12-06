@@ -206,7 +206,7 @@ async def change_username(
             detail="Username already taken",
         )
     
-    await users_coll.update_one({"_id": current_user.username}, {"$set": {"username": new_username}})
+    await users_coll.update_one({"username": current_user.username}, {"$set": {"username": new_username}})
 
    
     return {"msg": "Username successfully updated."}
@@ -217,14 +217,6 @@ async def change_password(
     old_password: Annotated[str, Form(...)],
     new_password: Annotated[str, Form(..., min_length=15)],
     current_user: Annotated[User, Depends(get_current_user)]):
-
-    user_in_db = await users_coll.find_one({"username": current_user.username})
-    if not user_in_db:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-
 
     if not verify_password(old_password, user_in_db["hashed_password"]):
         raise HTTPException(

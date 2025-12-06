@@ -170,17 +170,3 @@ async def forgot_password_requested(email: str):
     # TODO: Mkae this look better
     send_email(receiver_email=email, subject="Password Reset Requested",
                body=f"Please click the following link to reset your password: {settings.FRONTEND_URL}/auth/reset-password?reset_token={url_safe_string}")
-
-async def username_exists(username: str) -> bool:
-    existing = await users_coll.find_one({"username": username})
-    return existing is not None
-
-
-def is_valid_username(username: str) -> bool:
-    if not username:
-        return False
-    if len(username) < 5 or len(username) > 35:
-        return False
-    if not username.isalnum():
-        return False
-    return True
