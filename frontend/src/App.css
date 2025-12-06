@@ -1,6 +1,14 @@
 #root {
   max-width: 1280px;
   margin: 0 auto;
+  padding: 0; /* removed global padding so Navbar sits flush to the top */
+  text-align: center;
+}
+
+/* Use this wrapper inside your pages to keep content centered with padding */
+.content-container {
+  max-width: 1280px;
+  margin: 0 auto;
   padding: 2rem;
   text-align: center;
 }

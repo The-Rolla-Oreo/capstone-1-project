@@ -28,7 +28,7 @@ export default function Landing() {
       >
         <Container maxWidth="md">
           <Typography component="h1" variant="h2" gutterBottom sx={{ fontWeight: '700', mb: 2 }}>
-            Roommate coordination made simple
+            DormSpace - roommate coordination made simple
           </Typography>
           <Typography variant="h5" sx={{ mb: 4, opacity: 0.95 }}>
             Assign chores, share schedules, and keep your household running smoothly.
@@ -45,13 +45,13 @@ export default function Landing() {
       {/* Features Section */}
       <Container maxWidth="lg" sx={{ py: 10 }}>
         <Typography component="h2" variant="h3" gutterBottom sx={{ textAlign: 'center', mb: 6, fontWeight: '700' }}>
-          Why choose RoommateHub?
+          Why choose DormSpace?
         </Typography>
 
-        <Grid container spacing={4}>
+        <Grid container spacing={4} justifyContent="center">
           {features.map((feature, index) => (
             <Grid item xs={12} sm={6} md={3} key={index}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', textAlign: 'center' }}>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', textAlign: 'center', transition: '0.3s', '&:hover': { transform: 'translateY(-5px)', boxShadow: 6 } }}>
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Box sx={{ mb: 2 }}>{feature.icon}</Box>
                   <Typography gutterBottom variant="h6" component="div" sx={{ fontWeight: '600' }}>{feature.title}</Typography>
@@ -72,7 +72,7 @@ export default function Landing() {
           <Typography variant="body1" sx={{ mb: 4, color: 'text.secondary' }}>
             Create your group and start organizing today.
           </Typography>
-          <Button variant="contained" size="large" onClick={() => navigate('/signup')}>Start Free Today</Button>
+          <Button variant="contained" size="large" onClick={() => navigate('/signup')}>Start Today</Button>
         </Container>
       </Box>
     </>
