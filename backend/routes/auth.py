@@ -71,10 +71,11 @@ async def register_user(
     # Document to insert
     user_doc = {
         "username": username,
-        "full_name": full_name,
-        "email": email,
         "hashed_password": hashed_pwd,
+        "email": email,
+        "full_name": full_name,
         "email_verified": False,
+        "profile_picture_url": None,
         "group_ids": []
     }
 
