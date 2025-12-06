@@ -72,6 +72,19 @@ def upload_pfp_task(user_dict: dict, pfp_data: bytes):
     image.save(buffer, format="PNG")
     buffer.seek(0)
 
+    # If user already has a pfp, delete it from S3
+    if user.profile_picture_url:
+        old_s3_object_name = user.profile_picture_url.split(f"{S3_BUCKET_NAME}/")[-1]
+        try:
+            s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=old_s3_object_name)
+        except Exception:
+            send_email(
+                receiver_email=user.email,
+                subject="Profile Picture Upload Failed",
+                body="We could not upload your new profile picture to our storage. Please try again later.",
+            )
+            return
+
     # Define the S3 object name
     s3_object_name = f"profile_pictures/{user.id}.png"
 
