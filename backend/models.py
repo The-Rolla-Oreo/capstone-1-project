@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
+from datetime import datetime
 
 
 class Token(BaseModel):
@@ -57,3 +58,51 @@ class UserCreate(BaseModel):
     password: str = Field(..., min_length=10)
     email: str | None = None
     full_name: str | None = None
+
+
+
+class Group(BaseModel):
+    """Model representing a household group."""
+    id: str | None = Field(
+        default=None,
+        serialization_alias="_id",
+        validation_alias="_id",
+    )
+    group_name: str = Field(..., min_length=5, max_length=35)
+    group_admin_id: str
+    group_admin_username: str
+    users_in_group: list[str] = Field(default_factory=list)
+    created_at: datetime | None = None
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def _convert_object_id(cls, v):
+        if v is None:
+            return v
+        try:
+            return str(v)
+        except Exception:
+            return v
+
+    @field_validator("group_admin_id", mode="before")
+    @classmethod
+    def _convert_admin_id(cls, v):
+        try:
+            return str(v)
+        except Exception:
+            return v
+
+    @field_validator("users_in_group", mode="before")
+    @classmethod
+    def _convert_user_ids(cls, v):
+        if v is None:
+            return []
+        try:
+            return [str(item) for item in v]
+        except Exception:
+            return v
+
+
+class GroupCreate(BaseModel):
+    """Payload for creating a new group."""
+    group_name: str = Field(..., min_length=5, max_length=35)
