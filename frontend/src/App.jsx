@@ -2,17 +2,21 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState } from 'react';
 import Layout from './components/Layout.jsx';
 import Landing from './pages/Landing/Landing.jsx';
+import Signup from './pages/Signup/Signup.jsx';
+import Login from './pages/Login/Login.jsx';
 import './App.css';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, _setIsAuthenticated] = useState(false);
 
   return (
     <Router>
       <Layout isAuthenticated={isAuthenticated}>
         <Routes>
           <Route path="/" element={<Landing />} />
-          {/* Add more routes here for signup, login, dashboard, etc. */}
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/login" element={<Login />} />
+          {/* Add more routes here for dashboard, etc. */}
         </Routes>
       </Layout>
     </Router>
