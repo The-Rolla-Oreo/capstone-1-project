@@ -128,8 +128,8 @@ class Chore(BaseModel):
     completed_at: datetime | None = None
     recurring_chore_id: str | None = Field(
         default=None,
-        serialization_alias="group_id",
-        validation_alias="group_id",
+        serialization_alias="recurring_chore_id",
+        validation_alias="recurring_chore_id",
     )
 
     # Ensure Mongo's ObjectId gets serialized as a string
