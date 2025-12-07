@@ -123,7 +123,7 @@ def upload_pfp_task(user_dict: dict, pfp_data: bytes):
         try:
             s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=s3_object_name)
         except Exception:
-            print("Failed to delete newly uploaded S3 object after DB update failed.")
+            logging.warning("Failed to delete newly uploaded S3 object after DB update failed.")
         return
 
 
@@ -134,7 +134,7 @@ def upload_pfp_task(user_dict: dict, pfp_data: bytes):
             s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=old_s3_object_name)
         except Exception:
             # We don't want to fail the whole task if the old image deletion fails
-            print(f"Failed to delete old S3 object: {old_s3_object_name}")
+            logging.warning("Failed to delete old S3 object: %s", old_s3_object_name)
 
 
 
@@ -261,15 +261,15 @@ def process_recurring_chores():
     - Updates the recurring chore's next due date and last assigned user index
     """
     now = datetime.now(timezone.utc)
-    logging.info(f"Processing recurring chores at {now}")
+    logging.info("Processing recurring chores at %s", now)
 
     due_chores_cursor = recurring_chores_coll.find({"is_active": True, "next_due_date": {"$lte": now}})
     due_chores = list(due_chores_cursor)
     
-    logging.info(f"Found {len(due_chores)} due recurring chores.")
+    logging.info("Found %d due recurring chores.", len(due_chores))
 
     for chore in due_chores:
-        logging.info(f"Processing recurring chore: {chore}")
+        logging.info("Processing recurring chore: %s", chore)
         # Determine the next user to assign the chore to
         user_ids = chore["assigned_user_ids"]
         last_index = chore.get("last_assigned_user_index", -1)
@@ -288,12 +288,12 @@ def process_recurring_chores():
             "recurring_chore_id": chore["_id"],
         }
         chores_coll.insert_one(new_chore)
-        logging.info(f"Created new chore: {new_chore}")
+        logging.info("Created new chore: %s", new_chore)
 
         # Calculate the next due date
         rule = rrulestr(chore["rrule"], dtstart=chore["start_date"])
         next_due_date = rule.after(chore["next_due_date"])
-        logging.info(f"Calculated new next_due_date: {next_due_date}")
+        logging.info("Calculated new next_due_date: %s", next_due_date)
 
         # Update the recurring chore
         recurring_chores_coll.update_one(
@@ -305,9 +305,6 @@ def process_recurring_chores():
                 }
             },
         )
-        logging.info(f"Updated recurring chore with new next_due_date.")
+        logging.info("Updated recurring chore with new next_due_date.")
     
     logging.info("Finished processing recurring chores.")
-
-
-

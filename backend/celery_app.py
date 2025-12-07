@@ -1,5 +1,4 @@
 from celery import Celery
-from celery.schedules import crontab
 from kombu import Queue
 from .settings import get_settings
 
