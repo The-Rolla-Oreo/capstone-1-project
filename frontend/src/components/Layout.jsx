@@ -1,13 +1,16 @@
-import Navbar from './Navbar/Navbar.jsx';
-import Footer from './Footer/Footer.jsx';
+import Navbar from "./Navbar/Navbar.jsx";
+import Footer from "./Footer/Footer.jsx";
+import "./Layout.css";
 
 export default function Layout({ children, isAuthenticated }) {
   return (
     <>
       <Navbar isAuthenticated={isAuthenticated} />
-      <main style={{ minHeight: '100vh' }}>
+
+      <main className="layout-main">
         {children}
       </main>
+
       <Footer />
     </>
   );

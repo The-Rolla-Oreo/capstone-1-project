@@ -1,5 +1,6 @@
 #root {
-  max-width: 1280px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
   padding: 0; /* removed global padding so Navbar sits flush to the top */
   text-align: center;
