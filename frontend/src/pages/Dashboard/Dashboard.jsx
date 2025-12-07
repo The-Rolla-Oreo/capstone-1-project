@@ -26,10 +26,15 @@ const Dashboard = () => {
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [leaveGroupOpen, setLeaveGroupOpen] = useState(false);
   const [inviteUserOpen, setInviteUserOpen] = useState(false);
+  const [changeUsernameOpen, setChangeUsernameOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   // Form states (removed inviteToken)
   const [groupName, setGroupName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
+  const [newUsername, setNewUsername] = useState('');
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [actionError, setActionError] = useState('');
   const [actionSuccess, setActionSuccess] = useState('');
 
@@ -224,6 +229,84 @@ const Dashboard = () => {
     }
   };
 
+  // Change Username Handler
+  const handleChangeUsername = async () => {
+    setActionError('');
+    setActionSuccess('');
+
+    if (newUsername.length < 5 || newUsername.length > 35) {
+      setActionError('Username must be between 5 and 35 characters');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('new_username', newUsername);
+
+      const response = await fetch('/api/auth/change-username', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Failed to change username');
+      }
+
+      setActionSuccess(data.msg);
+      setNewUsername('');
+      setChangeUsernameOpen(false);
+      
+      // Refresh user details to show new username
+      await fetchUserDetails();
+    } catch (err) {
+      setActionError(err.message);
+    }
+  };
+
+  // Change Password Handler
+  const handleChangePassword = async () => {
+    setActionError('');
+    setActionSuccess('');
+
+    if (newPassword.length < 15) {
+      setActionError('New password must be at least 15 characters');
+      return;
+    }
+
+    if (!oldPassword) {
+      setActionError('Please enter your current password');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('old_password', oldPassword);
+      formData.append('new_password', newPassword);
+
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Failed to change password');
+      }
+
+      setActionSuccess(data.msg);
+      setOldPassword('');
+      setNewPassword('');
+      setChangePasswordOpen(false);
+    } catch (err) {
+      setActionError(err.message);
+    }
+  };
+
   return (
     <Box sx={{ padding: 4 }}>
       {/* Success/Error Messages */}
@@ -263,13 +346,20 @@ const Dashboard = () => {
               <Typography variant="body1">
                 <strong>Email Verified:</strong> {user?.email_verified ? 'Yes' : 'No'}
               </Typography>
-              <Button 
-                variant="contained" 
-                sx={{ mt: 2 }}
-                onClick={() => navigate('/settings')}
-              >
-                Edit Profile
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
+                <Button 
+                  variant="contained" 
+                  onClick={() => setChangeUsernameOpen(true)}
+                >
+                  Change Username
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  onClick={() => setChangePasswordOpen(true)}
+                >
+                  Change Password
+                </Button>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
@@ -423,6 +513,66 @@ const Dashboard = () => {
           <Button onClick={() => setInviteUserOpen(false)}>Cancel</Button>
           <Button onClick={handleInviteUser} variant="contained">
             Send Invite
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Change Username Dialog */}
+      <Dialog open={changeUsernameOpen} onClose={() => setChangeUsernameOpen(false)}>
+        <DialogTitle>Change Username</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="New Username"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={newUsername}
+            onChange={(e) => setNewUsername(e.target.value)}
+            helperText="Username must be between 5 and 35 characters"
+            inputProps={{ minLength: 5, maxLength: 35 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setChangeUsernameOpen(false)}>Cancel</Button>
+          <Button onClick={handleChangeUsername} variant="contained">
+            Change Username
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)}>
+        <DialogTitle>Change Password</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Current Password"
+            type="password"
+            fullWidth
+            variant="outlined"
+            value={oldPassword}
+            onChange={(e) => setOldPassword(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="New Password"
+            type="password"
+            fullWidth
+            variant="outlined"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            helperText="Password must be at least 15 characters"
+            inputProps={{ minLength: 15 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setChangePasswordOpen(false)}>Cancel</Button>
+          <Button onClick={handleChangePassword} variant="contained">
+            Change Password
           </Button>
         </DialogActions>
       </Dialog>
