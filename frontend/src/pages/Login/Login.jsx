@@ -42,7 +42,7 @@ export default function Login() {
       }
 
       setSuccessOpen(true)
-      setTimeout(() => navigate('/'), 800)
+      setTimeout(() => navigate('/dashboard'), 800)
     } catch (err) {
       setError(err.message || String(err))
     } finally {
