@@ -7,7 +7,7 @@ from bson.objectid import ObjectId
 from datetime import datetime, timezone
 
 from backend.settings import get_settings
-from backend.models import User
+from backend.models import User, Group
 from backend.helpers.helper_auth import get_current_user
 from backend.celery_worker import add_groups_to_user, create_group_doc, invite_user_to_group 
 
@@ -323,5 +323,46 @@ async def leave_household_group(
 
     return {"msg": "Left group successfully."}
 
+
+
+@router.get("/my-group", response_model=Group)
+async def my_group_details(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    """
+    Description
+    -----------
+    - Retrieves the current user's group details
+    - Returns group information including name, admin, and members
     
+    Returns
+    -------
+    Group: The group details as a Group model
     
+    Raises
+    ------
+    HTTPException: If user is not part of any group or group not found
+    """
+    
+    # Check if user belongs to a group
+    if not current_user.group_ids or len(current_user.group_ids) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User does not belong to any group."
+        )
+    
+    # Get the first group ID
+    my_group_id: str = current_user.group_ids[0]
+    
+    # Fetch group document from MongoDB
+    group_doc = await groups_coll.find_one({"_id": ObjectId(my_group_id)})
+    
+    # Check if group exists
+    if not group_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Group not found."
+        )
+    
+    # Return group document (Pydantic will handle conversion)
+    return Group(**group_doc)
