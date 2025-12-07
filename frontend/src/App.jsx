@@ -4,6 +4,7 @@ import Layout from './components/Layout.jsx';
 import Landing from './pages/Landing/Landing.jsx';
 import Signup from './pages/Signup/Signup.jsx';
 import Login from './pages/Login/Login.jsx';
+import EmailVerification from './pages/EmailVerification/EmailVerification.jsx'
 import './App.css';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/auth/verify-email" element={<EmailVerification />} />
           {/* Add more routes here for dashboard, etc. */}
         </Routes>
       </Layout>

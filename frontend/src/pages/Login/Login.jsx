@@ -15,7 +15,7 @@ export default function Login() {
     setError('')
     setSubmitting(true)
     try {
-      const endpoint = '/backend/auth/login'
+      const endpoint = '/api/auth/login'
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -54,7 +54,7 @@ export default function Login() {
     <Container maxWidth="sm" className="content-container">
       <Box sx={{ py: 6, textAlign: 'center' }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
-          Sign in to DormSpace
+          Log in to DormSpace
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
           Enter your username and password to continue.
@@ -81,7 +81,7 @@ export default function Login() {
             {error && <Alert severity="error">{error}</Alert>}
 
             <Button type="submit" variant="contained" size="large" disabled={submitting}>
-              {submitting ? 'Signing in…' : 'Sign In'}
+              {submitting ? 'Logging in…' : 'Log In'}
             </Button>
 
             <Button variant="text" onClick={() => navigate('/signup')}>
