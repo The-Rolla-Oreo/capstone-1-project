@@ -27,7 +27,7 @@ export default function Landing() {
             DormSpace - roommate coordination made simple
           </Typography>
 
-          <Typography variant="h5" className="hero-subtitle">
+          <Typography variant="h6" gutterBottom sx={{ mb: 2 }} className="hero-subtitle">
             Assign chores, share schedules, and keep your household running smoothly.
           </Typography>
 
@@ -82,7 +82,7 @@ export default function Landing() {
             Ready to simplify roommate coordination?
           </Typography>
 
-          <Typography variant="body1" className="cta-subtitle">
+          <Typography variant="body1" gutterBottom sx={{ mb: 2 }} className="cta-subtitle">
             Create your group and start organizing today.
           </Typography>
 
