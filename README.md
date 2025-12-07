@@ -11,6 +11,7 @@
 - Start ssh tunnel to RabbitMQ server using this command: `ssh -N -L 5672:localhost:5672 dev@<Replace with IP>`
   - You won't get any output if the tunnel is successfully established
 - Run the celery worker using this command: `celery -A backend.celery_app worker --loglevel=info`
+- Run the celery beat scheduler using this command: `celery -A backend.celery_app beat --loglevel=info`
 
 #### Frontend
 - `npm install` to install dependencies for the frontend
