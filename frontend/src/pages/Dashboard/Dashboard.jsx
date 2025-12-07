@@ -1,7 +1,19 @@
-import { useState, useEffect } from 'react';
-import { useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Card, CardContent, Button, Grid } from '@mui/material';
+import { 
+  Box, 
+  Typography, 
+  Card, 
+  CardContent, 
+  Button, 
+  Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Alert
+} from '@mui/material';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -10,7 +22,16 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Dialog states (removed joinGroupOpen)
+  const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [leaveGroupOpen, setLeaveGroupOpen] = useState(false);
+  const [inviteUserOpen, setInviteUserOpen] = useState(false);
 
+  // Form states (removed inviteToken)
+  const [groupName, setGroupName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [actionSuccess, setActionSuccess] = useState('');
 
   const fetchUserDetails = useCallback(async () => {
     try {
@@ -101,8 +122,122 @@ const Dashboard = () => {
     );
   }
 
+  // Create Group Handler
+  const handleCreateGroup = async () => {
+    setActionError('');
+    setActionSuccess('');
+
+    if (groupName.length < 5 || groupName.length > 35) {
+      setActionError('Group name must be between 5 and 35 characters');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('group_name', groupName);
+
+      const response = await fetch('/api/groups/create-group', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Failed to create group');
+      }
+
+      setActionSuccess(data.msg);
+      setGroupName('');
+      setCreateGroupOpen(false);
+      
+      // Refresh user and group details
+      await fetchUserDetails();
+      await fetchGroupDetails();
+    } catch (err) {
+      setActionError(err.message);
+    }
+  };
+
+  // Leave Group Handler
+  const handleLeaveGroup = async () => {
+    setActionError('');
+    setActionSuccess('');
+
+    try {
+      const response = await fetch('/api/groups/leave-group', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Failed to leave group');
+      }
+
+      setActionSuccess(data.msg);
+      setLeaveGroupOpen(false);
+      
+      // Refresh user and group details
+      await fetchUserDetails();
+      await fetchGroupDetails();
+    } catch (err) {
+      setActionError(err.message);
+    }
+  };
+
+  // Invite User Handler
+  const handleInviteUser = async () => {
+    setActionError('');
+    setActionSuccess('');
+
+    // Basic email validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!inviteEmail || !emailRegex.test(inviteEmail)) {
+      setActionError('Please enter a valid email address');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('email', inviteEmail);
+
+      const response = await fetch('/api/groups/invite-user', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Failed to send invite');
+      }
+
+      setActionSuccess(data.msg);
+      setInviteEmail('');
+      setInviteUserOpen(false);
+    } catch (err) {
+      setActionError(err.message);
+    }
+  };
+
   return (
     <Box sx={{ padding: 4 }}>
+      {/* Success/Error Messages */}
+      {actionSuccess && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setActionSuccess('')}>
+          {actionSuccess}
+        </Alert>
+      )}
+      {actionError && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setActionError('')}>
+          {actionError}
+        </Alert>
+      )}
+
       {/* Welcome Section */}
       <Typography variant="h3" gutterBottom>
         Welcome, {user?.username}!
@@ -165,10 +300,18 @@ const Dashboard = () => {
                     View Group
                   </Button>
                   <Button 
+                    variant="contained" 
+                    color="primary"
+                    sx={{ mt: 2, mr: 1 }}
+                    onClick={() => setInviteUserOpen(true)}
+                  >
+                    Invite User
+                  </Button>
+                  <Button 
                     variant="outlined" 
                     color="error"
                     sx={{ mt: 2 }}
-                    onClick={() => navigate('/leave-group')}
+                    onClick={() => setLeaveGroupOpen(true)}
                   >
                     Leave Group
                   </Button>
@@ -181,16 +324,13 @@ const Dashboard = () => {
                   <Button 
                     variant="contained" 
                     sx={{ mr: 1 }}
-                    onClick={() => navigate('/create-group')}
+                    onClick={() => setCreateGroupOpen(true)}
                   >
                     Create Group
                   </Button>
-                  <Button 
-                    variant="outlined"
-                    onClick={() => navigate('/join-group')}
-                  >
-                    Join Group
-                  </Button>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                    To join a group, click the invite link sent to your email.
+                  </Typography>
                 </>
               )}
             </CardContent>
@@ -216,6 +356,76 @@ const Dashboard = () => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Create Group Dialog */}
+      <Dialog open={createGroupOpen} onClose={() => setCreateGroupOpen(false)}>
+        <DialogTitle>Create a New Group</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Group Name"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={groupName}
+            onChange={(e) => setGroupName(e.target.value)}
+            helperText="Group name must be between 5 and 35 characters"
+            inputProps={{ minLength: 5, maxLength: 35 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateGroupOpen(false)}>Cancel</Button>
+          <Button onClick={handleCreateGroup} variant="contained">
+            Create
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Leave Group Confirmation Dialog */}
+      <Dialog open={leaveGroupOpen} onClose={() => setLeaveGroupOpen(false)}>
+        <DialogTitle>Leave Group</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            Are you sure you want to leave {group?.group_name}?
+          </Typography>
+          {group?.group_admin_id === user?.id && (
+            <Typography variant="body2" color="warning.main">
+              You are the admin. Another member will be promoted to admin if you leave.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLeaveGroupOpen(false)}>Cancel</Button>
+          <Button onClick={handleLeaveGroup} variant="contained" color="error">
+            Leave Group
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Invite User Dialog */}
+      <Dialog open={inviteUserOpen} onClose={() => setInviteUserOpen(false)}>
+        <DialogTitle>Invite User to Group</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Email Address"
+            type="email"
+            fullWidth
+            variant="outlined"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            helperText="Enter the email address of the user you want to invite"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setInviteUserOpen(false)}>Cancel</Button>
+          <Button onClick={handleInviteUser} variant="contained">
+            Send Invite
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

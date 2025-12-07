@@ -6,6 +6,7 @@ import Signup from './pages/Signup/Signup.jsx';
 import Login from './pages/Login/Login.jsx';
 import EmailVerification from './pages/EmailVerification/EmailVerification.jsx'
 import Dashboard from './pages/Dashboard/Dashboard.jsx';
+import JoinGroup from './pages/JoinGroup/JoinGroup.jsx';
 import './App.css';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/auth/verify-email" element={<EmailVerification />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/groups/join-group" element={<JoinGroup />} />
           {/* Add more routes here for dashboard, etc. */}
         </Routes>
       </Layout>
