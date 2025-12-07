@@ -1,0 +1,29 @@
+.navbar {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.navbar-toolbar {
+  padding-top: 8px;   /* py: 1 */
+  padding-bottom: 8px;
+}
+
+.navbar-logo {
+  flex-grow: 1;
+}
+
+.logo-button {
+  color: white !important;
+  text-transform: none;
+  font-weight: 700;
+  font-size: 23px;
+}
+
+.login-btn {
+  text-transform: none;
+  color: azure !important;
+}
+
+.signup-btn {
+  margin-left: 8px; /* ml: 1 */
+}

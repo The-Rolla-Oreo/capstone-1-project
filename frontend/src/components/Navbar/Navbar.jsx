@@ -1,17 +1,20 @@
-import { AppBar, Container, Toolbar, Button, Box } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
+import { AppBar, Container, Toolbar, Button, Box } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import "./Navbar.css";
 
 export default function Navbar({ isAuthenticated }) {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+
   return (
-    <AppBar position="sticky" color="transparent" elevation={0}>
-      <Container maxWidth="lg">
-        <Toolbar disableGutters sx={{ py: 1 }}>
-          <Box sx={{ flexGrow: 1 }}>
-            <Button onClick={() => navigate('/')} sx={{ color: 'text.primary', textTransform: 'none', fontWeight: 700, fontSize: 18 }}>
+    <AppBar position="sticky" color="transparent" elevation={0} className="navbar">
+      <Container maxWidth={false}>
+        <Toolbar disableGutters className="navbar-toolbar">
+          <Box className="navbar-logo">
+            <Button onClick={() => navigate('/')} className="logo-button">
               DormSpace
             </Button>
           </Box>
+
           {isAuthenticated ? (
             <>
               <Button color="inherit" onClick={() => navigate('/dashboard')}>Dashboard</Button>
@@ -19,12 +22,16 @@ export default function Navbar({ isAuthenticated }) {
             </>
           ) : (
             <>
-              <Button color="inherit" onClick={() => navigate('/login')} sx={{ textTransform: 'none' }}>Login</Button>
-              <Button variant="contained" onClick={() => navigate('/signup')} sx={{ ml: 1 }}>Sign Up</Button>
+              <Button onClick={() => navigate('/login')} className="login-btn">
+                Login
+              </Button>
+              <Button variant="contained" onClick={() => navigate('/signup')} className="signup-btn">
+                Sign Up
+              </Button>
             </>
           )}
         </Toolbar>
       </Container>
     </AppBar>
-  )
+  );
 }
