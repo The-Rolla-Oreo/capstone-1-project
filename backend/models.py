@@ -164,6 +164,7 @@ class RecurringChore(BaseModel):
     start_date: datetime
     next_due_date: datetime
     is_active: bool = True
+    last_assigned_user_index: int = 0
     created_at: datetime
 
     @field_validator("id", "group_id", mode="before")

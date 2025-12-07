@@ -1,4 +1,5 @@
 from celery import Celery
+from celery.schedules import crontab
 from kombu import Queue
 from .settings import get_settings
 
@@ -14,6 +15,12 @@ celery_app = Celery(
 
 celery_app.conf.update(
     task_track_started=True,
+    beat_schedule={
+        'process-recurring-chores-every-hour': {
+            'task': 'backend.celery_worker.process_recurring_chores',
+            'schedule': 300.0 # Run every 5 minutes
+        },
+    },
 )
 
 # Use unique, auto-deleting queues for each developer in dev mode
