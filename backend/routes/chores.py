@@ -12,6 +12,7 @@ import datetime
 from backend.settings import get_settings
 from backend.models import User, Chore, RecurringChore
 from backend.helpers.helper_auth import get_current_user
+from backend.helpers.helper_chores import validate_and_get_user_ids, recalculate_schedule
 
 
 settings = get_settings()
@@ -407,6 +408,7 @@ async def get_recurring_chores(current_user: Annotated[User, Depends(get_current
 
     return recurring_chores_list
 
+
 @router.put("/recurring-chores/{recurring_chore_id}")
 async def update_recurring_chore(
     recurring_chore_id: str,
@@ -423,6 +425,7 @@ async def update_recurring_chore(
 
     This endpoint is flexible, allowing a user to change any part of the recurring chore's
     definition, such as its name, the rotation of users, or the recurrence rule itself.
+    The logic is broken down into helper functions to reduce complexity.
 
     Parameters:
     - `recurring_chore_id`: The ID of the recurring chore to update.
@@ -440,8 +443,6 @@ async def update_recurring_chore(
     Raises:
     - `HTTPException(403, ...)`: If the user is not in a group.
     - `HTTPException(404, ...)`: If the recurring chore is not found in the user's group.
-    - `HTTPException(400, ...)`: If any provided usernames are invalid.
-    - `HTTPException(400, ...)`: If the `rrule_str` or `start_date_str` is invalid.
     - `HTTPException(400, "No fields to update.")`: If no update parameters are provided.
     - `HTTPException(500, "Failed to update recurring chore.")`: If the database update fails.
     """
@@ -462,7 +463,7 @@ async def update_recurring_chore(
             detail="Recurring chore not found in your group.",
         )
 
-    # Build a dictionary of fields to update. This allows for partial updates.
+    # Build a dictionary of fields to update.
     update_doc = {}
     if chore_name is not None:
         update_doc["chore_name"] = chore_name
@@ -471,48 +472,14 @@ async def update_recurring_chore(
     if is_active is not None:
         update_doc["is_active"] = is_active
     
-    # If a new list of usernames is provided, validate them.
+    # If new usernames are provided, validate them and add the new list of user IDs to the update.
     if assigned_usernames is not None:
-        assigned_user_obj_ids = []
-        for username in assigned_usernames:
-            user_doc = await users_coll.find_one({"username": username})
-            if not user_doc or not user_doc.get("group_ids") or user_doc["group_ids"][0] != group_id:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"User with username '{username}' not found or not in the same group.",
-                )
-            assigned_user_obj_ids.append(user_doc["_id"])
+        assigned_user_obj_ids = await validate_and_get_user_ids(assigned_usernames, group_id)
         update_doc["assigned_user_ids"] = assigned_user_obj_ids
 
-    # If the schedule changes, we need to recalculate the `next_due_date`.
-    if rrule_str is not None or start_date_str is not None:
-        # Use the new value if provided, otherwise fall back to the existing value.
-        new_rrule_str = rrule_str if rrule_str is not None else existing_chore["rrule"]
-        new_start_date_str = start_date_str if start_date_str is not None else existing_chore["start_date"].isoformat()
-        try:
-            # Ensure the start date is timezone-aware to prevent errors.
-            start_date = parse(new_start_date_str)
-            if start_date.tzinfo is None:
-                start_date = start_date.replace(tzinfo=datetime.timezone.utc)
-            
-            rule = rrulestr(new_rrule_str, dtstart=start_date)
-
-            # Recalculate the next due date based on the new schedule.
-            yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
-            next_due_date = rule.after(yesterday)
-
-            if next_due_date is None:
-                raise ValueError("Could not determine next due date for the given rule.")
-
-            # Add the updated schedule fields to the update document.
-            update_doc["rrule"] = new_rrule_str
-            update_doc["start_date"] = start_date
-            update_doc["next_due_date"] = next_due_date
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid rrule or start_date: {e}",
-            )
+    # If the schedule is being changed, recalculate the next due date and add the new schedule fields to the update.
+    schedule_update = recalculate_schedule(rrule_str, start_date_str, existing_chore)
+    update_doc.update(schedule_update)
 
     # If no fields were provided to update, there's nothing to do.
     if not update_doc:
