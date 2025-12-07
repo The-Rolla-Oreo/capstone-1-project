@@ -17,10 +17,12 @@ export default function Signup() {
     setError('')
     setSubmitting(true)
     try {
-      const res = await fetch('/api/signup', {
+      const endpoint = '/api/auth/register'
+      
+      const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, full_name: fullName, email, password }),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ username, full_name: fullName, email, password }).toString(),
       })
 
       if (!res.ok) {
