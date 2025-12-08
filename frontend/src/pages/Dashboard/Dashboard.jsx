@@ -326,7 +326,7 @@ const Dashboard = () => {
         Welcome, {user?.username}!
       </Typography>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={3} justifyContent="center">
         {/* User Profile Card */}
         <Grid item xs={12} md={6}>
           <Card>

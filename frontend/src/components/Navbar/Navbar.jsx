@@ -10,22 +10,22 @@ export default function Navbar({ isAuthenticated }) {
       <Container maxWidth={false}>
         <Toolbar disableGutters className="navbar-toolbar">
           <Box className="navbar-logo">
-            <Button onClick={() => navigate('/')} className="logo-button">
+            <Button onClick={() => navigate('/')} className="logo-button" sx={{ fontSize: '22px', fontWeight: 'bold' }}>
               DormSpace
             </Button>
           </Box>
 
           {isAuthenticated ? (
             <>
-              <Button color="inherit" onClick={() => navigate('/dashboard')}>Dashboard</Button>
-              <Button color="inherit" onClick={() => navigate('/profile')}>Profile</Button>
+              <Button color="inherit" onClick={() => navigate('/dashboard')} sx={{ fontSize: '16px' }}>Dashboard</Button>
+              <Button color="inherit" onClick={() => navigate('/profile')} sx={{ fontSize: '16px' }}>Profile</Button>
             </>
           ) : (
             <>
-              <Button onClick={() => navigate('/login')} className="login-btn">
+              <Button onClick={() => navigate('/login')} className="login-btn" sx={{ fontSize: '16px' }}>
                 Login
               </Button>
-              <Button variant="contained" onClick={() => navigate('/signup')} className="signup-btn">
+              <Button variant="contained" onClick={() => navigate('/signup')} className="signup-btn" sx={{ fontSize: '16px' }}>
                 Sign Up
               </Button>
             </>
