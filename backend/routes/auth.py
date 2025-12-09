@@ -196,6 +196,7 @@ async def reset_password(reset_token: str = Form(), new_password: str = Form(min
 
 @router.post("/change-username")
 async def change_username(
+    response: Response,
     new_username: Annotated[str, Form(..., min_length=5, max_length=35)],
     current_user: Annotated[User, Depends(get_current_user)]):
 
@@ -209,6 +210,22 @@ async def change_username(
     
     await users_coll.update_one({"username": current_user.username}, {"$set": {"username": new_username}})
 
+    access_token = create_access_token(
+        data={"sub": new_username},
+        expires_delta_in_min=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+
+    # TODO: Set cookie parameters dynamically depending on dev vs prod env
+    # Set JWT as HttpOnly cookie
+    response.set_cookie(
+        key="access_token",
+        value=f"Bearer {access_token}",
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60, # Convert minutes to seconds
+        path="/",
+    )
    
     return {"msg": "Username successfully updated."}
 
