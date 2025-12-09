@@ -1,7 +1,9 @@
 import base64
 import io
+import logging
 import secrets
 from datetime import datetime, timezone
+from dateutil.rrule import rrulestr
 
 import boto3
 from PIL import Image
@@ -25,6 +27,8 @@ PASSWORD_RESET_COLLECTION = settings.PASSWORD_RESET_COLLECTION
 EMAIL_VERIFICATION_COLLECTION = settings.EMAIL_VERIFICATION_COLLECTION
 GROUPS_COLLECTION = settings.GROUPS_COLLECTION
 GROUP_INVITES_COLLECTION = settings.GROUP_INVITES_COLLECTION
+CHORES_COLLECTION = settings.CHORES_COLLECTION
+RECURRING_CHORES_COLLECTION = settings.RECURRING_CHORES_COLLECTION
 
 # S3 config
 S3_ENDPOINT = settings.S3_ENDPOINT
@@ -43,6 +47,8 @@ password_reset_coll = _db[PASSWORD_RESET_COLLECTION]
 email_verification_coll = _db[EMAIL_VERIFICATION_COLLECTION]
 groups_coll = _db[GROUPS_COLLECTION]
 group_invites_coll = _db[GROUP_INVITES_COLLECTION]
+chores_coll = _db[CHORES_COLLECTION]
+recurring_chores_coll = _db[RECURRING_CHORES_COLLECTION]
 
 # Initialize S3 client
 s3_client = boto3.client(
@@ -117,7 +123,7 @@ def upload_pfp_task(user_dict: dict, pfp_data: bytes):
         try:
             s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=s3_object_name)
         except Exception:
-            print("Failed to delete newly uploaded S3 object after DB update failed.")
+            logging.warning("Failed to delete newly uploaded S3 object after DB update failed.")
         return
 
 
@@ -128,7 +134,7 @@ def upload_pfp_task(user_dict: dict, pfp_data: bytes):
             s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=old_s3_object_name)
         except Exception:
             # We don't want to fail the whole task if the old image deletion fails
-            print(f"Failed to delete old S3 object: {old_s3_object_name}")
+            logging.warning("Failed to delete old S3 object: %s", old_s3_object_name)
 
 
 
@@ -242,6 +248,63 @@ def invite_user_to_group(email: str, group_id: str, group_name: str):
     send_email(receiver_email=email, 
                subject=f"Invite Link To Join Group [{group_name}]",
                body=f"Please click the following link to reset your password: {settings.FRONTEND_URL}/groups/join-group?invite_token={invite_token}"
-    ) 
+    )
 
 
+@celery_app.task
+def process_recurring_chores():
+    """
+    Description
+    -----------
+    - Finds all active recurring chores that are due
+    - Creates a new chore for each due recurring chore
+    - Updates the recurring chore's next due date and last assigned user index
+    """
+    now = datetime.now(timezone.utc)
+    logging.info("Processing recurring chores at %s", now)
+
+    due_chores_cursor = recurring_chores_coll.find({"is_active": True, "next_due_date": {"$lte": now}})
+    due_chores = list(due_chores_cursor)
+    
+    logging.info("Found %d due recurring chores.", len(due_chores))
+
+    for chore in due_chores:
+        logging.info("Processing recurring chore: %s", chore)
+        # Determine the next user to assign the chore to
+        user_ids = chore["assigned_user_ids"]
+        last_index = chore.get("last_assigned_user_index", -1)
+        next_index = (last_index + 1) % len(user_ids)
+        assigned_user_id = user_ids[next_index]
+
+        # Create the new chore
+        new_chore = {
+            "group_id": chore["group_id"],
+            "chore_name": chore["chore_name"],
+            "chore_description": chore["chore_description"],
+            "assigned_user_id": assigned_user_id,
+            "is_completed": False,
+            "created_at": now,
+            "completed_at": None,
+            "recurring_chore_id": chore["_id"],
+        }
+        chores_coll.insert_one(new_chore)
+        logging.info("Created new chore: %s", new_chore)
+
+        # Calculate the next due date
+        rule = rrulestr(chore["rrule"], dtstart=chore["start_date"])
+        next_due_date = rule.after(chore["next_due_date"])
+        logging.info("Calculated new next_due_date: %s", next_due_date)
+
+        # Update the recurring chore
+        recurring_chores_coll.update_one(
+            {"_id": chore["_id"]},
+            {
+                "$set": {
+                    "next_due_date": next_due_date,
+                    "last_assigned_user_index": next_index,
+                }
+            },
+        )
+        logging.info("Updated recurring chore with new next_due_date.")
+    
+    logging.info("Finished processing recurring chores.")
