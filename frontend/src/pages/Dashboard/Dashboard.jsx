@@ -435,9 +435,6 @@ const Dashboard = () => {
                 Quick Actions
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <Button variant="contained">Add Expense</Button>
-                <Button variant="contained">View Expenses</Button>
-                <Button variant="contained">Generate Report</Button>
                 <Button variant="outlined" color="error" onClick={handleLogout}>
                   Logout
                 </Button>
