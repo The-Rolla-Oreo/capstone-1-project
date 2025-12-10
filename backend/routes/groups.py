@@ -325,7 +325,7 @@ async def leave_household_group(
 
 
 
-@router.get("/my-group", response_model=Group)
+@router.get("/my-group")
 async def my_group_details(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
@@ -334,10 +334,11 @@ async def my_group_details(
     -----------
     - Retrieves the current user's group details
     - Returns group information including name, admin, and members
+    - Includes usernames for all group members
     
     Returns
     -------
-    Group: The group details as a Group model
+    dict: The group details with additional users_in_group_usernames field
     
     Raises
     ------
@@ -364,5 +365,24 @@ async def my_group_details(
             detail="Group not found."
         )
     
-    # Return group document (Pydantic will handle conversion)
-    return Group(**group_doc)
+    # Fetch usernames for all users in the group
+    users_in_group_usernames = []
+    for user_id in group_doc.get("users_in_group", []):
+        user_doc = await users_coll.find_one({"_id": user_id})
+        if user_doc:
+            users_in_group_usernames.append(user_doc.get("username", "Unknown"))
+        else:
+            users_in_group_usernames.append("Unknown")
+    
+    # Convert ObjectIds to strings for JSON serialization
+    group_response = {
+        "_id": str(group_doc["_id"]),
+        "group_name": group_doc["group_name"],
+        "group_admin_id": str(group_doc["group_admin_id"]),
+        "group_admin_username": group_doc["group_admin_username"],
+        "users_in_group": [str(uid) for uid in group_doc.get("users_in_group", [])],
+        "users_in_group_usernames": users_in_group_usernames,
+        "created_at": group_doc.get("created_at")
+    }
+    
+    return group_response
