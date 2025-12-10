@@ -314,7 +314,39 @@ async def create_recurring_chore(
             detail="You must be in a group to create a recurring chore.",
         )
     
+    # Parse the recurrence rule and calculate the first due date.
+    try:
+        # The start date from the client might not have timezone info.
+        # We parse it and then ensure it's timezone-aware by setting it to UTC if it's naive.
+        # This prevents "can't compare offset-naive and offset-aware datetimes" errors.
+        start_date = parse(start_date_str)
+        if start_date.tzinfo is None:
+            start_date = start_date.replace(tzinfo=datetime.timezone.utc)
+        
+        rule = rrulestr(rrule_str, dtstart=start_date)
+
+        # To calculate the initial `next_due_date`, we find the first occurrence of the rule
+        # that is AFTER the current time (not in the past).
+        # This ensures that even if start_date is in the past, next_due_date will always be in the future.
+        now = datetime.datetime.now(datetime.timezone.utc)
+        next_due_date = rule.after(now, inc=False)  # inc=False means strictly after, not including 'now'
+
+        # If `rule.after()` returns None, it means no future occurrences could be found,
+        # which indicates a problem with the rule (e.g., a finite rule that has already ended).
+        if next_due_date is None:
+            raise ValueError("Could not determine next due date for the given rule.")
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid rrule or start_date: {e}",
+        )
+
+    # Get group id of current user
     group_id = ObjectId(current_user.group_ids[0])
+
+    # Create a id for the recurring_chore document
+    recurring_chore_id = ObjectId()
 
     # Validate that all assigned users exist and belong to the same group.
     # This prevents assigning chores to users who can't see them.
@@ -328,36 +360,23 @@ async def create_recurring_chore(
             )
         assigned_user_obj_ids.append(user_doc["_id"])
 
-    # Parse the recurrence rule and calculate the first due date.
-    try:
-        # The start date from the client might not have timezone info.
-        # We parse it and then ensure it's timezone-aware by setting it to UTC if it's naive.
-        # This prevents "can't compare offset-naive and offset-aware datetimes" errors.
-        start_date = parse(start_date_str)
-        if start_date.tzinfo is None:
-            start_date = start_date.replace(tzinfo=datetime.timezone.utc)
-        
-        rule = rrulestr(rrule_str, dtstart=start_date)
-
-        # To calculate the initial `next_due_date`, we find the first occurrence of the rule
-        # that is on or after the start date. A simple way to do this is to ask for the first
-        # occurrence after yesterday.
-        yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
-        next_due_date = rule.after(yesterday)
-
-        # If `rule.after()` returns None, it means no future occurrences could be found,
-        # which indicates a problem with the rule (e.g., a finite rule that has already ended).
-        if next_due_date is None:
-            raise ValueError("Could not determine next due date for the given rule.")
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid rrule or start_date: {e}",
-        )
+        # If asssigned user is in same group then
+        # Create the new chore and assign to user 
+        new_chore = {
+            "group_id": group_id,
+            "chore_name": chore_name,
+            "chore_description": chore_description,
+            "assigned_user_id": user_doc.get("_id"),
+            "is_completed": False,
+            "created_at": now,
+            "completed_at": None,
+            "recurring_chore_id": recurring_chore_id,
+        }
+        await chores_coll.insert_one(new_chore)
 
     # Create the document for the recurring chore schedule.
     recurring_chore_doc = {
+        "_id": recurring_chore_id,
         "group_id": group_id,
         "chore_name": chore_name,
         "chore_description": chore_description,
@@ -371,6 +390,7 @@ async def create_recurring_chore(
     }
 
     result = await recurring_chores_coll.insert_one(recurring_chore_doc)
+
 
     return {"message": "Recurring chore created successfully", "recurring_chore_id": str(result.inserted_id)}
 
