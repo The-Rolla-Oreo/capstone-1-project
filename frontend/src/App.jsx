@@ -7,6 +7,7 @@ import Login from './pages/Login/Login.jsx';
 import EmailVerification from './pages/EmailVerification/EmailVerification.jsx'
 import Dashboard from './pages/Dashboard/Dashboard.jsx';
 import JoinGroup from './pages/JoinGroup/JoinGroup.jsx';
+import GroupManagement from './pages/GroupManagement/GroupManagement.jsx';
 import './App.css';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
           <Route path="/auth/verify-email" element={<EmailVerification />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/groups/join-group" element={<JoinGroup />} />
+          <Route path="/group-details" element={<GroupManagement />} />
           {/* Add more routes here for dashboard, etc. */}
         </Routes>
       </Layout>
