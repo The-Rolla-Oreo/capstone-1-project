@@ -1,0 +1,132 @@
+/* HERO SECTION                  */
+
+.hero {
+  text-align: center;
+  padding-top: 64px;     /* xs: 8 */
+  padding-bottom: 64px;
+  color: white;
+  background: linear-gradient(135deg, var(--mui-palette-primary-main) 0%, var(--mui-palette-secondary-main) 100%);
+}
+
+.hero-gradient-box {
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #22d3ee 100%);
+  border-radius: 20px;
+  max-width: 2000px;
+  padding: 80px 40px;
+  margin: 0 auto;       
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  color: white;
+}
+
+.hero-title {
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.hero-subtitle {
+  margin-bottom: auto;
+  opacity: 0.95;
+}
+
+.hero-signin {
+  border-color: rgba(255, 255, 255, 0.8) !important;
+  color: white !important;
+}
+
+/* FEATURES SECTION              */
+
+.features-section {
+  padding-top: 80px;   
+  padding-bottom: 80px;
+}
+
+.features-title {
+  text-align: center;
+  margin-bottom: 48px;
+  font-weight: 700;
+}
+
+/* ⭐⭐ ADD THIS — 2x2 GRID LAYOUT ⭐⭐ */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* ⭐⭐ ADD THIS — fixed-size cards ⭐⭐ */
+.feature-card-fixed {
+  width: 100%;
+  height: 200px;   /* 👈 change if you want bigger cards */
+  padding: 20px;
+  border-radius: 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: 0.25s ease;
+}
+
+.feature-card-fixed:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--mui-shadow-6);
+}
+
+
+/* Original Card Styles (kept for icons/text) */
+
+.feature-card {
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.feature-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.feature-icon {
+  font-size: 48px;
+  color: var(--mui-palette-primary-main);
+}
+
+.feature-icon-box {
+  margin-bottom: 16px;
+}
+
+.feature-title {
+  font-weight: 600;
+}
+
+/* CTA SECTION                   */
+
+.cta-section {
+  background-color: var(--mui-palette-background-paper);
+  text-align: center;
+  padding-top: 64px;
+  padding-bottom: 64px;
+}
+
+.cta-title {
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.cta-subtitle {
+  margin-bottom: 32px;
+  color: var(--mui-palette-text-secondary);
+}

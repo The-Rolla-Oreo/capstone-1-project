@@ -167,7 +167,7 @@ async def read_users_me(
 async def logout(response: Response):
     """Delete the auth cookie to log out the user."""
     response.delete_cookie(key="access_token", path="/")
-    return Response(status_code=204)
+    return {"msg": "Logged out successfully"}
 
 
 @router.post("/forgot-password")

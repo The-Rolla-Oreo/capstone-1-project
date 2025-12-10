@@ -1,0 +1,7 @@
+.footer {
+  margin-top: 64px; /* mt: 8 (MUI spacing = 8px * 8) */
+  padding-top: 32px; /* py: 4 */
+  padding-bottom: 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+  background-color: transparent;
+}
