@@ -7,7 +7,7 @@ from bson.objectid import ObjectId
 from datetime import datetime, timezone
 
 from backend.settings import get_settings
-from backend.models import User, Group
+from backend.models import User
 from backend.helpers.helper_auth import get_current_user
 from backend.celery_worker import add_groups_to_user, create_group_doc, invite_user_to_group 
 
