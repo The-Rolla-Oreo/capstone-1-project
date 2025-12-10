@@ -27,7 +27,37 @@ export default function Signup() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data.detail || 'Signup failed')
+        // Handle both string and array of validation errors
+        let errorMessage = 'Signup failed'
+        if (data.detail) {
+          if (typeof data.detail === 'string') {
+            errorMessage = data.detail
+          } else if (Array.isArray(data.detail)) {
+            // Extract error messages from FastAPI validation error format and make them more user-friendly
+            errorMessage = data.detail.map(err => {
+              const field = err.loc ? err.loc[err.loc.length - 1] : 'Field'
+              const fieldName = field === 'full_name' ? 'Full Name' : 
+                                field.charAt(0).toUpperCase() + field.slice(1)
+              
+              if (err.msg) {
+                // Customize common validation messages
+                if (err.msg.includes('at least 5 characters')) {
+                  return `${fieldName} must be at least 5 characters`
+                } else if (err.msg.includes('at least 15 characters')) {
+                  return `${fieldName} must be at least 15 characters`
+                } else if (err.msg.includes('match pattern')) {
+                  return `${fieldName} must be a valid email address`
+                } else {
+                  return `${fieldName}: ${err.msg}`
+                }
+              }
+              return err.message || JSON.stringify(err)
+            }).join('; ')
+          } else if (typeof data.detail === 'object') {
+            errorMessage = JSON.stringify(data.detail)
+          }
+        }
+        throw new Error(errorMessage)
       }
 
       setSuccessOpen(true)
