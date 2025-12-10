@@ -104,6 +104,7 @@ export default function GroupManagement() {
         setTimeout(() => navigate('/dashboard'), 2000);
       }
     } catch (err) {
+      console.error("Error details:", err);
       setError('Failed to load group details');
     }
   }, [navigate]);
@@ -460,7 +461,7 @@ export default function GroupManagement() {
                         )}
                       </TableCell>
                       <TableCell>
-                        {new Date(chore.created_at).toLocaleDateString()}
+                        {new Date(chore.created_at + 'Z').toLocaleDateString()}
                       </TableCell>
                       <TableCell>
                         {!chore.is_completed && (
@@ -548,7 +549,7 @@ export default function GroupManagement() {
                       </Typography>
                       <Typography variant="body2">
                         <strong>Next Due:</strong>{' '}
-                        {new Date(rc.next_due_date).toLocaleString()}
+                        {new Date(rc.next_due_date + 'Z').toLocaleString()}
                       </Typography>
                       <Typography variant="body2">
                         <strong>Assigned Users:</strong>{' '}
