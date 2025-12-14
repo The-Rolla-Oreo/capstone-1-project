@@ -41,7 +41,7 @@ router = APIRouter()
 async def register_user(
     username: Annotated[str, Form(..., min_length=5, max_length=35)],
     password: Annotated[str, Form(..., min_length=15)],
-    email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")],
+    email: Annotated[str, Form(..., pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")],
     full_name: Annotated[str, Form(..., min_length=5, max_length=100)],
 ):
     """
@@ -171,7 +171,7 @@ async def logout(response: Response):
 
 
 @router.post("/forgot-password")
-async def forgot_password(email: Annotated[str, Form(..., regex=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")],):
+async def forgot_password(email: Annotated[str, Form(..., pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")],):
     forgot_password_requested_task.delay(email)
 
     return {"msg": "Password reset link sent to your email if an account with that email exists."}
