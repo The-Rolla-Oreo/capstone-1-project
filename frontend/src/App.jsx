@@ -1,35 +1,34 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useState } from 'react';
+import Layout from './components/Layout.jsx';
+import Landing from './pages/Landing/Landing.jsx';
+import Signup from './pages/Signup/Signup.jsx';
+import Login from './pages/Login/Login.jsx';
+import EmailVerification from './pages/EmailVerification/EmailVerification.jsx'
+import Dashboard from './pages/Dashboard/Dashboard.jsx';
+import JoinGroup from './pages/JoinGroup/JoinGroup.jsx';
+import GroupManagement from './pages/GroupManagement/GroupManagement.jsx';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [isAuthenticated, _setIsAuthenticated] = useState(false);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Router>
+      <Layout isAuthenticated={isAuthenticated}>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/auth/verify-email" element={<EmailVerification />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/groups/join-group" element={<JoinGroup />} />
+          <Route path="/group-details" element={<GroupManagement />} />
+          {/* Add more routes here for dashboard, etc. */}
+        </Routes>
+      </Layout>
+    </Router>
+  );
 }
 
-export default App
+export default App;
