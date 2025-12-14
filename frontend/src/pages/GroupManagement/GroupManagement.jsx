@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { RRule } from 'rrule';
 import {
   Box,
   Typography,
@@ -545,7 +546,7 @@ export default function GroupManagement() {
                       </Typography>
                       <Divider sx={{ my: 1 }} />
                       <Typography variant="body2">
-                        <strong>Schedule:</strong> {rc.rrule}
+                        <strong>Schedule:</strong> {RRule.fromString(rc.rrule).toText()}
                       </Typography>
                       <Typography variant="body2">
                         <strong>Next Due:</strong>{' '}
