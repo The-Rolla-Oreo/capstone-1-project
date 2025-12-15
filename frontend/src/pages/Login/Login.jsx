@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Container, Box, Typography, TextField, Button, Stack, Alert, Snackbar } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
+import apiClient from '../../apiClient'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -15,13 +16,12 @@ export default function Login() {
     setError('')
     setSubmitting(true)
     try {
-      const endpoint = '/api/auth/login'
+      const endpoint = '/auth/login'
 
-      const res = await fetch(endpoint, {
+      const res = await apiClient(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ username, password }).toString(),
-        credentials: 'include' // if backend uses cookies/auth
+        body: new URLSearchParams({ username, password }).toString()
       })
 
       if (!res.ok) {

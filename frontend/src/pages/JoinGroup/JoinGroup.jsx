@@ -3,6 +3,7 @@ import { Container, Box, Typography, CircularProgress, Alert, Button } from '@mu
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ErrorIcon from '@mui/icons-material/Error'
+import apiClient from '../../apiClient'
 
 export default function JoinGroup() {
   const navigate = useNavigate()
@@ -27,15 +28,14 @@ export default function JoinGroup() {
       }
 
       try {
-        const endpoint = '/api/groups/join-group'
+        const endpoint = '/groups/join-group'
         
         const formData = new FormData()
         formData.append('invite_token', token)
 
-        const res = await fetch(endpoint, {
+        const res = await apiClient(endpoint, {
           method: 'POST',
           body: formData,
-          credentials: 'include',
         })
 
         const data = await res.json().catch(() => ({}))
