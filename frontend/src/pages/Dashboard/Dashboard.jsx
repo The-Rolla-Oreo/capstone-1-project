@@ -14,7 +14,6 @@ import {
   TextField,
   Alert
 } from '@mui/material';
-import apiClient from '../../apiClient';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -41,9 +40,10 @@ const Dashboard = () => {
 
   const fetchUserDetails = useCallback(async () => {
     try {
-      const endpoint = '/auth/my-details'
-      const response = await apiClient(endpoint, {
+      const endpoint = '/api/auth/my-details'
+      const response = await fetch(endpoint, {
         method: 'GET',
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -68,9 +68,10 @@ const Dashboard = () => {
 
   const fetchGroupDetails = useCallback(async () => {
     try {
-      const endpoint = '/groups/my-group'
-      const response = await apiClient(endpoint, {
+      const endpoint = '/api/groups/my-group'
+      const response = await fetch(endpoint, {
         method: 'GET',
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -95,9 +96,10 @@ const Dashboard = () => {
 
   const handleLogout = async () => {
     try {
-      const endpoint = '/auth/logout'
-      await apiClient(endpoint, {
+      const endpoint = '/api/auth/logout'
+      await fetch(endpoint, {
         method: 'POST',
+        credentials: 'include',
       });
     } catch (err) {
       console.error('Logout failed:', err);
@@ -139,8 +141,9 @@ const Dashboard = () => {
       const formData = new FormData();
       formData.append('group_name', groupName);
 
-      const response = await apiClient('/groups/create-group', {
+      const response = await fetch('/api/groups/create-group', {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       });
 
@@ -168,8 +171,9 @@ const Dashboard = () => {
     setActionSuccess('');
 
     try {
-      const response = await apiClient('/groups/leave-group', {
+      const response = await fetch('/api/groups/leave-group', {
         method: 'POST',
+        credentials: 'include',
       });
 
       const data = await response.json();
@@ -205,8 +209,9 @@ const Dashboard = () => {
       const formData = new FormData();
       formData.append('email', inviteEmail);
 
-      const response = await apiClient('/groups/invite-user', {
+      const response = await fetch('/api/groups/invite-user', {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       });
 
@@ -238,8 +243,9 @@ const Dashboard = () => {
       const formData = new FormData();
       formData.append('new_username', newUsername);
 
-      const response = await apiClient('/auth/change-username', {
+      const response = await fetch('/api/auth/change-username', {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       });
 
@@ -280,8 +286,9 @@ const Dashboard = () => {
       formData.append('old_password', oldPassword);
       formData.append('new_password', newPassword);
 
-      const response = await apiClient('/auth/change-password', {
+      const response = await fetch('/api/auth/change-password', {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       });
 

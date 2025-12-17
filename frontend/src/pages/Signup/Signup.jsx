@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Container, Box, Typography, TextField, Button, Stack, Alert, Snackbar } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import apiClient from '../../apiClient'
 
 export default function Signup() {
   const navigate = useNavigate()
@@ -18,9 +17,9 @@ export default function Signup() {
     setError('')
     setSubmitting(true)
     try {
-      const endpoint = '/auth/register'
+      const endpoint = '/api/auth/register'
       
-      const res = await apiClient(endpoint, {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ username, full_name: fullName, email, password }).toString(),

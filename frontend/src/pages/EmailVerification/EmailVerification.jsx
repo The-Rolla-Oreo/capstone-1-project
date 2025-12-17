@@ -3,7 +3,6 @@ import { Container, Box, Typography, CircularProgress, Alert, Button } from '@mu
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ErrorIcon from '@mui/icons-material/Error'
-import apiClient from '../../apiClient'
 
 export default function EmailVerification() {
   const navigate = useNavigate()
@@ -27,12 +26,13 @@ export default function EmailVerification() {
       }
 
       try {
-        const endpoint = '/auth/verify-email'
+        const endpoint = '/api/auth/verify-email'
         
-        const res = await apiClient(endpoint, {
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({ email_verification_token: token }).toString()
+          body: new URLSearchParams({ email_verification_token: token }).toString(),
+          credentials: 'include',
         })
 
         const data = await res.json().catch(() => ({}))
