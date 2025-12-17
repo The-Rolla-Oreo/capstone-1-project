@@ -81,7 +81,7 @@ export default function GroupManagement() {
   // Fetch group details
   const fetchGroupDetails = useCallback(async () => {
     try {
-      const response = await fetch('/api/groups/my-group', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/groups/my-group`, {
         method: 'GET',
         credentials: 'include',
       });
@@ -113,7 +113,7 @@ export default function GroupManagement() {
   // Fetch chores
   const fetchChores = useCallback(async () => {
     try {
-      const response = await fetch('/api/chores/chores', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/chores/chores`, {
         method: 'GET',
         credentials: 'include',
       });
@@ -130,7 +130,7 @@ export default function GroupManagement() {
   // Fetch recurring chores
   const fetchRecurringChores = useCallback(async () => {
     try {
-      const response = await fetch('/api/chores/recurring-chores/', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/chores/recurring-chores/`, {
         method: 'GET',
         credentials: 'include',
       });
@@ -170,7 +170,7 @@ export default function GroupManagement() {
         formData.append('assigned_username', assignedUsername);
       }
 
-      const response = await fetch('/api/chores/create-chore', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/chores/create-chore`, {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -196,7 +196,7 @@ export default function GroupManagement() {
   // Handle complete chore
   const handleCompleteChore = async (choreId) => {
     try {
-      const response = await fetch(`/api/chores/complete-chore/${choreId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/chores/complete-chore/${choreId}`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -219,7 +219,7 @@ export default function GroupManagement() {
     if (!confirm('Are you sure you want to delete this chore?')) return;
 
     try {
-      const response = await fetch(`/api/chores/delete-chore/${choreId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/chores/delete-chore/${choreId}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -276,7 +276,7 @@ export default function GroupManagement() {
       formData.append('rrule_str', buildRRule());
       formData.append('start_date_str', new Date(startDate).toISOString());
 
-      const response = await fetch('/api/chores/recurring-chores/', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/chores/recurring-chores/`, {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -314,7 +314,7 @@ export default function GroupManagement() {
       if (editRecurringDescription) formData.append('chore_description', editRecurringDescription);
       formData.append('is_active', editRecurringActive);
 
-      const response = await fetch(`/api/chores/recurring-chores/${editingRecurringChore._id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/chores/recurring-chores/${editingRecurringChore._id}`, {
         method: 'PUT',
         credentials: 'include',
         body: formData,
@@ -340,7 +340,7 @@ export default function GroupManagement() {
     if (!confirm('Are you sure you want to delete this recurring chore? All associated chores will be deleted.')) return;
 
     try {
-      const response = await fetch(`/api/chores/recurring-chores/${recurringChoreId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/chores/recurring-chores/${recurringChoreId}`, {
         method: 'DELETE',
         credentials: 'include',
       });

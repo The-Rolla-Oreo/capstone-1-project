@@ -17,7 +17,7 @@ export default function Signup() {
     setError('')
     setSubmitting(true)
     try {
-      const endpoint = '/api/auth/register'
+      const endpoint = `${import.meta.env.VITE_API_URL}/auth/register`
       
       const res = await fetch(endpoint, {
         method: 'POST',

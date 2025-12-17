@@ -27,7 +27,7 @@ export default function JoinGroup() {
       }
 
       try {
-        const endpoint = '/api/groups/join-group'
+        const endpoint = `${import.meta.env.VITE_API_URL}/groups/join-group`
         
         const formData = new FormData()
         formData.append('invite_token', token)

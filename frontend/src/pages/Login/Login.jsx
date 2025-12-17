@@ -15,7 +15,7 @@ export default function Login() {
     setError('')
     setSubmitting(true)
     try {
-      const endpoint = '/api/auth/login'
+      const endpoint = `${import.meta.env.VITE_API_URL}/auth/login`
 
       const res = await fetch(endpoint, {
         method: 'POST',

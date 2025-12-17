@@ -26,7 +26,7 @@ export default function EmailVerification() {
       }
 
       try {
-        const endpoint = '/api/auth/verify-email'
+        const endpoint = `${import.meta.env.VITE_API_URL}/auth/verify-email`
         
         const res = await fetch(endpoint, {
           method: 'POST',

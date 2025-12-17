@@ -40,7 +40,7 @@ const Dashboard = () => {
 
   const fetchUserDetails = useCallback(async () => {
     try {
-      const endpoint = '/api/auth/my-details'
+      const endpoint = `${import.meta.env.VITE_API_URL}/auth/my-details`
       const response = await fetch(endpoint, {
         method: 'GET',
         credentials: 'include',
@@ -68,7 +68,7 @@ const Dashboard = () => {
 
   const fetchGroupDetails = useCallback(async () => {
     try {
-      const endpoint = '/api/groups/my-group'
+      const endpoint = `${import.meta.env.VITE_API_URL}/groups/my-group`
       const response = await fetch(endpoint, {
         method: 'GET',
         credentials: 'include',
@@ -96,7 +96,7 @@ const Dashboard = () => {
 
   const handleLogout = async () => {
     try {
-      const endpoint = '/api/auth/logout'
+      const endpoint = `${import.meta.env.VITE_API_URL}/auth/logout`
       await fetch(endpoint, {
         method: 'POST',
         credentials: 'include',
@@ -141,7 +141,7 @@ const Dashboard = () => {
       const formData = new FormData();
       formData.append('group_name', groupName);
 
-      const response = await fetch('/api/groups/create-group', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/groups/create-group`, {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -171,7 +171,7 @@ const Dashboard = () => {
     setActionSuccess('');
 
     try {
-      const response = await fetch('/api/groups/leave-group', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/groups/leave-group`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -209,7 +209,7 @@ const Dashboard = () => {
       const formData = new FormData();
       formData.append('email', inviteEmail);
 
-      const response = await fetch('/api/groups/invite-user', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/groups/invite-user`, {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -243,7 +243,7 @@ const Dashboard = () => {
       const formData = new FormData();
       formData.append('new_username', newUsername);
 
-      const response = await fetch('/api/auth/change-username', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/change-username`, {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -286,7 +286,7 @@ const Dashboard = () => {
       formData.append('old_password', oldPassword);
       formData.append('new_password', newPassword);
 
-      const response = await fetch('/api/auth/change-password', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/change-password`, {
         method: 'POST',
         credentials: 'include',
         body: formData,
