@@ -1,5 +1,5 @@
 // src/apiClient.js
-const API_BASE_URL = 'https://capstone-1-project-1jhl.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 /**
  * A wrapper for the fetch API to prepend the API base URL and handle credentials.
