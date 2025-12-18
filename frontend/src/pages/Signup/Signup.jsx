@@ -23,6 +23,7 @@ export default function Signup() {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ username, full_name: fullName, email, password }).toString(),
+        credentials: 'include',
       })
 
       if (!res.ok) {

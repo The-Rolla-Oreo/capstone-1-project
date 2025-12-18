@@ -148,7 +148,7 @@ async def login_for_access_token(
         value=f"Bearer {access_token}",
         httponly=True,
         samesite="none",
-        secure=False,
+        secure=True,
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60, # Convert minutes to seconds
         path="/",
     )
@@ -222,7 +222,7 @@ async def change_username(
         value=f"Bearer {access_token}",
         httponly=True,
         samesite="none",
-        secure=False,
+        secure=True,
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60, # Convert minutes to seconds
         path="/",
     )
